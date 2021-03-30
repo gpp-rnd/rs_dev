@@ -37,7 +37,8 @@ class GuideDataset:
         if self.dataset is None:
             raise ValueError('Dataset must be loaded')
     
-    def get_sg_df(self, sg_name='sgRNA Sequence', context_name='sgRNA Context Sequence', pam_name='PAM Sequence'):
+    def get_sg_df(self, sg_name='sgRNA Sequence', context_name='sgRNA Context Sequence', 
+                  pam_name='PAM Sequence'):
         self.check_data_loaded()
         sg_df = (self.dataset[[self.sgrna_seq_col, self.context_seq_col]]
                  .rename({self.sgrna_seq_col: sg_name, self.context_seq_col: context_name}, axis=1)
