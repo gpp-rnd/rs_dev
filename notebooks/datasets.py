@@ -1,4 +1,5 @@
 import pandas as pd
+from sklearn.model_selection import train_test_split, GroupShuffleSplit
 
 class GuideDataset:
     """Parent class for datasets for modeling sgRNA activity
@@ -38,19 +39,41 @@ class GuideDataset:
             raise ValueError('Dataset must be loaded')
     
     def get_sg_df(self, sg_name='sgRNA Sequence', context_name='sgRNA Context Sequence', 
-                  pam_name='PAM Sequence'):
+                  pam_name='PAM Sequence', include_group=False, group_name='sgRNA Target',
+                  include_activity=False, activity_name='sgRNA Activity'):
         self.check_data_loaded()
         sg_df = (self.dataset[[self.sgrna_seq_col, self.context_seq_col]]
                  .rename({self.sgrna_seq_col: sg_name, self.context_seq_col: context_name}, axis=1)
                  .drop_duplicates())
         sg_df[pam_name] = sg_df[context_name].str[-6:-3]
+        if include_group & (self.sgrna_group_col is not None):
+            sg_df[group_name] = self.dataset[self.sgrna_group_col]
+        if include_activity:
+            sg_df[activity_name] = self.dataset[self.rank_col]
         return sg_df
 
     def get_sgrnas(self):
         self.sgrnas = set(self.dataset[self.sgrna_seq_col].to_list())
 
-    def split_data(self, test_size, test_min=None, test_max=None):
-        pass
+    def split_validation(self, val_frac=0.2, prepicked_sgs=None, random_state=7):
+        if prepicked_sgs is not None:
+            train_df = self.dataset[~self.dataset[self.sgrna_seq_col].isin(prepicked_sgs)]
+            val_df = self.dataset[self.dataset[self.sgrna_seq_col].isin(prepicked_sgs)]
+        else:
+            train_df = self.dataset
+            val_df = self.dataset.iloc[:0, :]  # empty dataframe
+        curr_val_frac = val_df.shape[0]/(train_df.shape[0] + val_df.shape[0])
+        if curr_val_frac < val_frac:
+            add_val_frac = val_frac - curr_val_frac
+            if self.sgrna_group_col is None:
+                train_df, new_val_df = train_test_split(train_df, test_size=add_val_frac, random_state=random_state)
+            else:
+                train_df, new_val_df = next(GroupShuffleSplit(n_splits=1, test_size=add_val_frac,
+                                                              random_state=random_state)
+                                            .split(train_df, groups=train_df[self.sgrna_group_col]))
+            val_df = pd.concat([val_df, new_val_df])
+        return train_df.reset_index(drop=True), val_df.reset_index(drop=True)
+
 
 
 aguirre_data = GuideDataset(filepath='../data/processed/Aguirre2017_activity.csv',
@@ -102,7 +125,7 @@ shalem_data = GuideDataset(filepath='../data/processed/Shalem2014_activity.csv',
 
 wang_data = GuideDataset('../data/processed/Wang2014_activity.csv',
                          sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                         rank_col='avg_rank', name='Wang_2014',
+                         rank_col='avg_rank', name='Wang2014',
                          sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %')
 
 dataset_list = [aguirre_data, chari_data, deweirdt_data, doench2014_mouse_data, doench2014_human_data,

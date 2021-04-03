@@ -1,0 +1,16 @@
+pandas
+jupyterlab
+numpy
+seaborn
+scikit-learn
+gpplot
+scipy
+matplotlib
+pyarrow
+poola
+networkx
+jupyter
+tqdm
+sglearn
+xgboost
+plotnine
