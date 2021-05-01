@@ -55,24 +55,6 @@ class GuideDataset:
     def get_sgrnas(self):
         self.sgrnas = set(self.dataset[self.sgrna_seq_col].to_list())
 
-    def split_validation(self, val_frac=0.2, prepicked_sgs=None, random_state=7):
-        if prepicked_sgs is not None:
-            train_df = self.dataset[~self.dataset[self.sgrna_seq_col].isin(prepicked_sgs)]
-            val_df = self.dataset[self.dataset[self.sgrna_seq_col].isin(prepicked_sgs)]
-        else:
-            train_df = self.dataset
-            val_df = self.dataset.iloc[:0, :]  # empty dataframe
-        curr_val_frac = val_df.shape[0]/(train_df.shape[0] + val_df.shape[0])
-        if curr_val_frac < val_frac:
-            add_val_frac = val_frac - curr_val_frac
-            if self.sgrna_group_col is None:
-                train_df, new_val_df = train_test_split(train_df, test_size=add_val_frac, random_state=random_state)
-            else:
-                train_df, new_val_df = next(GroupShuffleSplit(n_splits=1, test_size=add_val_frac,
-                                                              random_state=random_state)
-                                            .split(train_df, groups=train_df[self.sgrna_group_col]))
-            val_df = pd.concat([val_df, new_val_df])
-        return train_df.reset_index(drop=True), val_df.reset_index(drop=True)
 
 
 
