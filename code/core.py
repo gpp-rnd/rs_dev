@@ -3,11 +3,12 @@ import pandas as pd
 import plotnine as gg
 
 
-def get_predictive_performance(prediction_list, activity_col='sgRNA Activity'):
+def get_predictive_performance(prediction_list, activity_col):
     """From a list of dataframes of predictions for each fold for each datasetset for each guide,
     get pearson correlation of each fold/dataset
 
     :param prediction_list: list of DataFrame
+    :param activity_col: str, column which we're trying to predict
     :return: DataFrame
     """
     test_prediction_df = (pd.concat(prediction_list)
@@ -15,20 +16,29 @@ def get_predictive_performance(prediction_list, activity_col='sgRNA Activity'):
     predictive_performance = (test_prediction_df.groupby(['model_name', 'testing_set', 'fold'])
                               .apply(lambda df: stats.pearsonr(df[activity_col], df['prediction'])[0])
                               .reset_index(name='pearson_r'))
-    predictive_performance['relative_performance'] = (predictive_performance.groupby(['fold', 'testing_set'])
-                                                      ['pearson_r']
-                                                      .transform(lambda x: x/x.max()))
-    median_relative_performance = (predictive_performance.groupby(['model_name'])
-                                   .agg(median_performance = ('relative_performance', 'median'))
-                                   .reset_index()
-                                   .sort_values('median_performance'))
+    test_set_count = (test_prediction_df[['sgRNA Context Sequence', 'testing_set', 'fold']]
+                      .drop_duplicates()
+                      .groupby(['testing_set', 'fold'])
+                      .agg(n_guides=('sgRNA Context Sequence', 'count'))
+                      .reset_index())
+    predictive_performance = (predictive_performance.merge(test_set_count, how='inner',
+                                                           on=['testing_set', 'fold']))
+    predictive_performance['fold'] = predictive_performance['fold'].astype('category')
+    predictive_performance['fold_name'] = ('fold ' + predictive_performance['fold'].astype(str) +
+                                           ' (n=' +
+                                           predictive_performance['n_guides'].astype(int).astype(str) + ')')
+    agg_performance = (predictive_performance.groupby('model_name')
+                       .agg(mean_pearson=('pearson_r', 'mean'),
+                            std_pearson=('pearson_r', 'std'),
+                            median_pearson=('pearson_r', 'median'))
+                       .reset_index()
+                       .sort_values('median_pearson', ascending=False))
     predictive_performance['model_name'] = pd.Categorical(predictive_performance['model_name'],
-                                                            categories=median_relative_performance['model_name'])
+                                                            categories=agg_performance['model_name'])
     if predictive_performance['testing_set'].isin(predictive_performance['model_name']).all():
         predictive_performance['testing_set'] = pd.Categorical(predictive_performance['testing_set'],
-                                                               categories=median_relative_performance['model_name'])
-    predictive_performance['fold'] = predictive_performance['fold'].astype('category')
-    return predictive_performance
+                                                               categories=agg_performance['model_name'])
+    return predictive_performance, agg_performance
 
 
 def plot_pearson_heatmap(predictive_performance):
@@ -47,19 +57,16 @@ def plot_pearson_heatmap(predictive_performance):
     return g
 
 
-def plot_relative_performance(predictive_performance):
-    """Plot boxplot of relative performance
-
-    :param predictive_performance: predictive_performance: DataFrame from `get_predictive_performance`
-    :return: plotnine figure
-    """
+def plot_pearson_lollipop(predictive_performance):
     g = (gg.ggplot(predictive_performance) +
-         gg.aes(x='model_name', y='relative_performance') +
-         gg.geom_point(gg.aes(color='fold'), position=gg.position_dodge(width=0.5)) +
+         gg.aes(y='pearson_r', ymin=0, ymax='pearson_r', x='fold_name', xend='fold_name', color='model_name') +
          gg.scale_color_brewer(type='qual', palette='Set2') +
-         gg.geom_boxplot(fill=None, outlier_alpha=0) +
+         gg.geom_point(position=gg.position_dodge(width=0.7), size=4, shape='.') +
+         gg.geom_linerange(position=gg.position_dodge(width=0.7)) +
+         gg.coord_flip() +
          gg.theme_classic() +
-         gg.theme(axis_text_x=gg.element_text(angle=90, hjust=0.5, vjust=1)))
+         gg.theme(subplots_adjust={'wspace': 0.6, 'hspace': 0.3}) +
+         gg.facet_wrap('testing_set', scales='free') +
+         gg.guides(color=gg.guide_legend(reverse=True)))
     return g
-
 
