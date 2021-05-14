@@ -1,5 +1,5 @@
 import pandas as pd
-from sklearn.model_selection import train_test_split, GroupShuffleSplit
+
 
 class GuideDataset:
     """Parent class for datasets for modeling sgRNA activity
@@ -138,5 +138,40 @@ dataset_list = [aguirre_data, chari_data, deweirdt_data, doench2014_mouse_data, 
                 doench2016_data, kim_train_data, kim_test_data, koike_data, shalem_data, wang_data]
 
 
+def get_sg_groups_df(datasets):
+    """Get DataFrame of sgRNAs with designs, activity, and target columns
+
+    :param datasets: list of GuideDataset
+    :return: DataFrame
+    """
+    for ds in datasets:
+        ds.load_data()
+        ds.set_sgrnas()
+    sg_df_list = []
+    for ds in datasets:
+        sg_df = ds.get_sg_df(include_group=True, include_activity=True)
+        sg_df['dataset'] = ds.name
+        design_df = ds.get_designs()
+        sg_df = sg_df.merge(design_df, how='inner',
+                            on=['sgRNA Sequence', 'sgRNA Context Sequence', 'PAM Sequence'])
+        sg_df_list.append(sg_df)
+    sg_df_groups = (pd.concat(sg_df_list)
+                    .groupby(['sgRNA Context Sequence'])
+                    .agg(n_conditions=('sgRNA Context Sequence', 'count'),
+                         target=('sgRNA Target', lambda x: ', '.join(set([s.upper() for s in x if not pd.isna(s)]))))
+                    .reset_index())
+    multi_target = sg_df_groups['target'].str.contains(',').sum()
+    print('Context sequences with multiple targets: ' + str(multi_target))
+    # handle singleton case
+    sg_df_groups['target'] = sg_df_groups.apply(lambda row:
+                                                row['target'] if (row['target'] != '') else
+                                                row['sgRNA Context Sequence'],
+                                                axis=1)
+    # Note that 'target' is not in the sg_df_list, and is coming from the sg_df_groups df
+    sg_df_class_groups = (pd.concat(sg_df_list)
+                          .merge(sg_df_groups, how='inner', on='sgRNA Context Sequence')
+                          .sort_values(['dataset', 'target'])
+                          .reset_index(drop=True))
+    return sg_df_class_groups
 
 

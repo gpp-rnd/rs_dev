@@ -77,7 +77,7 @@ def test_aa_seq_featurization():
            'G', 'H', 'I', 'K', 'L',
            'M', 'N', 'P', 'Q', 'R',
            'S', 'T', 'V', 'W', 'Y', '*']
-    target = 'ACDG*N'
+    target = 'ACDG*-'
     sequence_order = ['-2', '-1', '0', '1', '2', '3']
     ft_dict = {}
     ft.get_one_aa_frac(ft_dict, target, aas)
@@ -87,7 +87,7 @@ def test_aa_seq_featurization():
     assert ft_dict['DG'] == 1/5
     ft.get_one_aa_pos(ft_dict, target, aas, sequence_order)
     assert ft_dict['-1C'] == 1
-    ft_dict_df = ft.featurize_aa_seqs([target, 'CDG*NN'])
+    ft_dict_df = ft.featurize_aa_seqs([target, 'CDG*--'])
     pd.testing.assert_series_equal(ft_dict_df.loc[target, :],
                                    pd.DataFrame([ft_dict]).iloc[0, :], check_names=False)
 

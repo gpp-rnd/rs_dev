@@ -1,6 +1,7 @@
 from scipy import stats
 import pandas as pd
 import plotnine as gg
+from sklearn.model_selection import StratifiedGroupKFold
 
 
 def get_predictive_performance(prediction_list, activity_col):
@@ -32,7 +33,7 @@ def get_predictive_performance(prediction_list, activity_col):
                             std_pearson=('pearson_r', 'std'),
                             median_pearson=('pearson_r', 'median'))
                        .reset_index()
-                       .sort_values('median_pearson', ascending=False))
+                       .sort_values('mean_pearson', ascending=False))
     predictive_performance['model_name'] = pd.Categorical(predictive_performance['model_name'],
                                                             categories=agg_performance['model_name'])
     if predictive_performance['testing_set'].isin(predictive_performance['model_name']).all():
@@ -70,3 +71,27 @@ def plot_pearson_lollipop(predictive_performance):
          gg.guides(color=gg.guide_legend(reverse=True)))
     return g
 
+
+
+def get_tidy_cv_df(sg_df, random_state=7, y_col='dataset', group_col='target'):
+    """Get dataframe where training and testing sets for each fold are concatenated
+
+    :param sg_df: DataFrame with y_col and group_col
+    :param random_state: int, for StratifiedGroupKFold
+    :param y_col: str
+    :param group_col: str
+    """
+    sgkf = StratifiedGroupKFold(n_splits=5, shuffle=True, random_state=random_state)
+    tidy_cv_list = []
+    for i, (train_index, test_index) in enumerate(sgkf.split(sg_df, sg_df[y_col],
+                                                             sg_df[group_col])):
+        train_df = sg_df.iloc[train_index, :].copy()
+        train_df['cv'] = i
+        train_df['train'] = True
+        tidy_cv_list.append(train_df)
+        test_df = sg_df.iloc[test_index, :].copy()
+        test_df['cv'] = i
+        test_df['train'] = False
+        tidy_cv_list.append(test_df)
+    tidy_cv_df = pd.concat(tidy_cv_list)
+    return tidy_cv_df
