@@ -87,9 +87,8 @@ def test_aa_seq_featurization():
     assert ft_dict['DG'] == 1/5
     ft.get_one_aa_pos(ft_dict, target, aas, sequence_order)
     assert ft_dict['-1C'] == 1
-    ft_dict_df = ft.featurize_aa_seqs([target, 'CDG*--'])
-    pd.testing.assert_series_equal(ft_dict_df.loc[target, :],
-                                   pd.DataFrame([ft_dict]).iloc[0, :], check_names=False)
+    ft_dict_df = ft.featurize_aa_seqs(pd.Series([target, 'CDG*--', 'LLLLLL']))
+    assert ft_dict_df.loc['LLLLLL', 'Hydrophobicity'] == ft_dict_df['Hydrophobicity'].max()
 
 
 def get_rev_comp(sgrna):
@@ -103,7 +102,10 @@ def get_rev_comp(sgrna):
 
 
 def test_aa_features(sg_designs_endog, aa_seq_df, codon_map):
-    aa_features = ft.get_amino_acid_features(sg_designs_endog, aa_seq_df, width=10)
+    aa_features = ft.get_amino_acid_features(sg_designs_endog, aa_seq_df, width=10,
+                                             features=['Pos. Ind. 1mer', 'Pos. Ind. 2mer', 'Pos. Dep. 1mer',
+                                                       'Hydrophobicity', 'Aromaticity',
+                                                       'Isoelectric Point', 'Secondary Structure'])
     assert (aa_features['AA Subsequence'].str.len() == 20).all()
     row = aa_features.sample(1, random_state=7).iloc[0, :]
     subseq = row['AA Subsequence']
@@ -122,9 +124,10 @@ def test_aa_features(sg_designs_endog, aa_seq_df, codon_map):
 
 
 def test_domain_conservation(sg_designs_endog, domain_data, conservation_data):
-    protein_domain_features = ft.get_protein_domain_features(sg_designs_endog, domain_data)
+    protein_domain_features = ft.get_protein_domain_features(sg_designs_endog, domain_data, sources=None)
     conservation_features = ft.get_conservation_features(sg_designs_endog, conservation_data,
-                                                         small_width=6, large_width=50)
+                                                         small_width=6, large_width=50,
+                                                         conservation_column='ranked_conservation')
     merged_features = protein_domain_features.merge(conservation_features, how='inner', on=['Transcript Base',
                                                                                             'sgRNA Context Sequence'])
     smart_avg_cons = merged_features.loc[merged_features['Smart'].astype(bool), 'cons_12'].mean()
@@ -137,6 +140,5 @@ def test_featurization(sg_designs_endog, aa_seq_df, domain_data, conservation_da
                                                           aa_seq_df=aa_seq_df,
                                                           protein_domain_df=domain_data,
                                                           conservation_df=conservation_data)
-    assert len(feature_list) > 100
+    assert len(feature_list) > 40
     assert feature_df.shape[0] == sg_designs_endog.shape[0]
-    assert feature_df.isna().sum().sum() == 0

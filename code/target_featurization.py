@@ -129,8 +129,7 @@ def featurize_aa_seqs(aa_sequences, features=None):
     """
     if features is None:
         features = ['Pos. Ind. 1mer', 'Hydrophobicity', 'Aromaticity',
-                    'Isoelectric Point',
-                    'Secondary Structure']
+                    'Isoelectric Point', 'Secondary Structure']
     seq_len = len(aa_sequences[0])
     sequence_order = [str(int(x - seq_len/2 + 1)) for x in range(seq_len)]
     aas = ['A', 'C', 'D', 'E', 'F',
@@ -162,7 +161,7 @@ def featurize_aa_seqs(aa_sequences, features=None):
     return feature_matrix
 
 
-def get_amino_acid_features(sg_designs, aa_seq_df, width=8, features=None):
+def get_amino_acid_features(sg_designs, aa_seq_df, width, features):
     """Featurize amino acid sequences
 
     :param sg_designs: DataFrame
@@ -193,19 +192,19 @@ def get_amino_acid_features(sg_designs, aa_seq_df, width=8, features=None):
 # Protein Domain
 
 
-def get_protein_domain_features(sg_design_df, protein_domains, categories=None):
+def get_protein_domain_features(sg_design_df, protein_domains, sources):
     """Get binary dataframe of protein domains
 
     :param sg_design_df: DataFrame, with columns ['Transcript Base', 'sgRNA Context Sequence', 'AA Index']
     :param protein_domains: DataFrame, with columns ['Transcript Base', 'type']
-    :param categories: list. list of database types to include
+    :param sources: list. list of database types to include
     :return: DataFrame, with binary features for protein domains
     """
-    if categories is None:
-        categories = ['Pfam', 'PANTHER', 'HAMAP', 'SuperFamily', 'TIGRfam', 'ncoils', 'Gene3D',
+    if sources is None:
+        sources = ['Pfam', 'PANTHER', 'HAMAP', 'SuperFamily', 'TIGRfam', 'ncoils', 'Gene3D',
                       'Prosite_patterns', 'Seg', 'SignalP', 'TMHMM', 'MobiDBLite',
-                      'PIRSF', 'PRINTS', 'Smart', 'Prosite_profiles']
-    protein_domains = protein_domains[protein_domains['type'].isin(categories)]
+                      'PIRSF', 'PRINTS', 'Smart', 'Prosite_profiles']  # exclude sifts
+    protein_domains = protein_domains[protein_domains['type'].isin(sources)]
     domain_feature_df = sg_design_df[['Transcript Base', 'sgRNA Context Sequence', 'AA Index']].copy()
     domain_feature_df = domain_feature_df.merge(protein_domains,
                                                 how='inner', on='Transcript Base')
@@ -220,7 +219,7 @@ def get_protein_domain_features(sg_design_df, protein_domains, categories=None):
                                                        fill_value=0)
                          .reset_index())
     # Ensure all domain columns are present for testing
-    full_column_df = pd.DataFrame(columns=categories, dtype=int)  # empty
+    full_column_df = pd.DataFrame(columns=sources, dtype=int)  # empty
     domain_feature_df = pd.concat([full_column_df, domain_feature_df])
     return domain_feature_df
 
@@ -234,8 +233,8 @@ def get_conservation_ranges(cut_pos, small_width, large_width):
     return small_range, large_range
 
 
-def get_conservation_features(sg_designs, conservation_df, conservation_column='ranked_conservation',
-                              small_width=2, large_width=32):
+def get_conservation_features(sg_designs, conservation_df, conservation_column,
+                              small_width, large_width):
     """Get conservation features
 
     :param sg_designs: DataFrame
@@ -303,7 +302,7 @@ def build_target_feature_df(sg_designs, features=None,
         position_features = get_position_features(design_df)
         feature_df_dict['position'] = position_features
     if 'domain' in features:
-        domain_features = get_protein_domain_features(design_df, protein_domain_df, categories=protein_domain_sources)
+        domain_features = get_protein_domain_features(design_df, protein_domain_df, sources=protein_domain_sources)
         feature_df_dict['domain'] = domain_features
     if 'conservation' in features:
         conservation_features = get_conservation_features(design_df, conservation_df,
