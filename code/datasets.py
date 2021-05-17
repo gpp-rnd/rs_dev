@@ -84,12 +84,6 @@ chari_data = GuideDataset(filepath='../data/processed/Chari2015_activity.csv',
                           sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
                           rank_col='log10(293T mutation rate)', endogenous=False, name='Chari2015')
 
-deweirdt_data = GuideDataset(filepath='../data/processed/DeWeirdt2020_activity.csv',
-                             sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                             rank_col='avg_rank', endogenous=True, name='DeWeirdt2020',
-                             sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
-                             design_file=human_designs)
-
 doench2014_mouse_data = GuideDataset(filepath='../data/processed/Doench2014_mouse_activity.csv',
                                      sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
                                      rank_col='gene_rank', endogenous=True, name='Doench2014_mouse',
@@ -134,7 +128,7 @@ wang_data = GuideDataset('../data/processed/Wang2014_activity.csv',
                          sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
                          design_file=human_designs)
 
-dataset_list = [aguirre_data, chari_data, deweirdt_data, doench2014_mouse_data, doench2014_human_data,
+dataset_list = [aguirre_data, chari_data, doench2014_mouse_data, doench2014_human_data,
                 doench2016_data, kim_train_data, kim_test_data, koike_data, shalem_data, wang_data]
 
 

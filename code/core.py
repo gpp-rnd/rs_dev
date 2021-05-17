@@ -2,6 +2,8 @@ from scipy import stats
 import pandas as pd
 import plotnine as gg
 from sklearn.model_selection import StratifiedGroupKFold
+import numpy as np
+from tqdm import tqdm
 
 
 def get_predictive_performance(prediction_list, activity_col):
@@ -95,3 +97,83 @@ def get_tidy_cv_df(sg_df, random_state=7, y_col='dataset', group_col='target'):
         tidy_cv_list.append(test_df)
     tidy_cv_df = pd.concat(tidy_cv_list)
     return tidy_cv_df
+
+
+def point_range_plot(df, x, y, ymin, ymax):
+    """Create a pointrange plot
+
+    :param df: DataFrame with columns x, y, ymin, ymax
+    :param x: str
+    :param y: str
+    :param ymin: str
+    :param ymax: str
+    :return: plotnine plot
+    """
+    g = (gg.ggplot(data=df) +
+         gg.aes(x=x, y=y,
+                ymin=ymin, ymax=ymax) +
+         gg.geom_pointrange() +
+         gg.facet_wrap('dataset', scales='free_y') +
+         gg.theme_classic() +
+         gg.theme(subplots_adjust={'wspace': 0.25},
+                  axis_text_x=gg.element_text(angle=45, hjust=1, vjust=1)))
+    return g
+
+
+def calculate_prediction_stats(prediction_df):
+    """Calculate statistics from prediction data
+
+    :param prediction_df: DataFrame
+    :return: DataFrame
+    """
+    prediction_stats = (prediction_df
+                        .groupby(['dataset', 'model'])
+                        .apply(lambda df: pd.Series(
+        {'spearman': stats.spearmanr(df['prediction'], df['sgRNA Activity'])[0],
+         'pearson': stats.pearsonr(df['prediction'], df['sgRNA Activity'])[0],
+         'size': df.shape[0]}))
+                        .reset_index())
+    return prediction_stats
+
+
+def get_model_performance(prediction_df, nboots=1000):
+    """Evaluate the predictive performance of model
+
+    :param prediction_df: DataFrame, predictions with columns ['sgRNA Activity', 'dataset', 'model', 'prediction']
+    :param nboots: int, number of bootstrap resamples
+    :return: DataFrame,
+    """
+    performance_point_estimates =  calculate_prediction_stats(prediction_df)
+    bootstrap_prediction_list = []
+    for i in tqdm(range(nboots)):
+        resampled_predictions = (prediction_df.groupby(['dataset', 'model'])
+                                 .sample(frac=1, replace=True,
+                                         random_state=i))
+        predictive_performance = calculate_prediction_stats(resampled_predictions)
+        bootstrap_prediction_list.append(predictive_performance)
+    predictive_performance_ci = (pd.concat(bootstrap_prediction_list)
+                                 .reset_index(drop=True)
+                                 .groupby(['dataset', 'model'])
+                                 .agg(pearson_975=('pearson', lambda x: np.percentile(x, 97.5)),
+                                      pearson_025=('pearson', lambda x: np.percentile(x, 2.5)),
+                                      spearman_975=('spearman', lambda x: np.percentile(x, 97.5)),
+                                      spearman_025=('spearman', lambda x: np.percentile(x, 2.5)))
+                                 .reset_index()
+                                 .merge(performance_point_estimates, how='inner',
+                                        on=['dataset', 'model']))
+    predictive_performance_ci['dataset_name'] = (predictive_performance_ci['dataset'] + '\n(n = ' +
+                                                 predictive_performance_ci['size'].astype(int).astype(str) + ')')
+    dataset_size = (predictive_performance_ci[['dataset_name', 'size']].drop_duplicates()
+                    .sort_values('size', ascending=False))
+    predictive_performance_ci['dataset_name'] = pd.Categorical(predictive_performance_ci['dataset_name'],
+                                                               categories=dataset_size['dataset_name'])
+    predictive_performance_ci['spearman_rank'] = (predictive_performance_ci.groupby('dataset')
+                                                  ['spearman']
+                                                  .rank())
+    model_avg_rank = (predictive_performance_ci.groupby('model')
+                      .agg({'spearman_rank': 'mean'})
+                      .reset_index()
+                      .sort_values('spearman_rank'))
+    predictive_performance_ci['model'] = pd.Categorical(predictive_performance_ci['model'],
+                                                        categories=model_avg_rank['model'])
+    return predictive_performance_ci
