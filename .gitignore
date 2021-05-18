@@ -3,3 +3,4 @@ data/
 .ipynb_checkpoints/
 Pipfile.lock
 Pipfile
+figures/
