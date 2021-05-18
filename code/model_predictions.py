@@ -19,7 +19,7 @@ class ModelPrediction():
     def load_model_predictions(self):
         self.prediction_df = pd.read_csv(self.prediction_file)
 
-    def get_sgrnas(self):
+    def set_sgrnas(self):
         train_df = pd.read_csv(self.train_sgrna_file)
         if self.train_20mer_col is not None:
             self.sgrnas = set(train_df[self.train_20mer_col].to_list())
@@ -44,7 +44,12 @@ deepspcas9_predictions = ModelPrediction('../data/external/DeepSpCas9_rs_dev_all
 deepcrispr_predictions = ModelPrediction('../data/external/DeepCRISPR_rs_dev_all_sgrnas.csv', 'DeepCRISPR', 'DeepCRISPR',
                                          '../data/external/Chuai2018_tableS5_sgrnas.csv', train_23mer_col='sgRNA')
 
-model_prediction_list = [rule_set2_predictions, deepspcas9_predictions, deepcrispr_predictions]
+vbc_activity_predictions = ModelPrediction('../data/external/vbc_activity_scores_rs_dev.csv', 'VBC Activity',
+                                           'VBC Activity', '../data/external/munozS4_azimuth_sgrnas.csv',
+                                           train_20mer_col='sgRNA Sequence')
+
+model_prediction_list = [deepspcas9_predictions, rule_set2_predictions,
+                         vbc_activity_predictions, deepcrispr_predictions]
 
 vbc_predictions = ModelPrediction('../data/external/vbc_scores_rs_dev.csv', 'VBC score', 'VBC score',
                                   '../data/external/munozS4_azimuth_sgrnas.csv', train_20mer_col='sgRNA Sequence',
