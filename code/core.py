@@ -171,7 +171,7 @@ def get_model_performance(prediction_df, nboots=1000):
     :param nboots: int, number of bootstrap resamples
     :return: DataFrame,
     """
-    performance_point_estimates =  calculate_prediction_stats(prediction_df)
+    performance_point_estimates = calculate_prediction_stats(prediction_df)
     bootstrap_prediction_list = []
     for i in tqdm(range(nboots)):
         resampled_predictions = (prediction_df.groupby(['dataset', 'model'])
@@ -205,3 +205,12 @@ def get_model_performance(prediction_df, nboots=1000):
     predictive_performance_ci['model'] = pd.Categorical(predictive_performance_ci['model'],
                                                         categories=model_avg_rank['model'])
     return predictive_performance_ci
+
+
+def lollipop_plot(data, cat, val):
+    g = (gg.ggplot(data) +
+         gg.aes(y=val, ymin=0, ymax=val, x=cat, xend=cat) +
+         gg.geom_point(size=4, shape='.') +
+         gg.geom_linerange() +
+         gg.coord_flip())
+    return g
