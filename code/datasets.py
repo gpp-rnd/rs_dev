@@ -35,10 +35,12 @@ class GuideDataset:
         self.sgrnas = None
 
     def load_data(self):
-        if '.csv' in self.filepath:
-            self.dataset = pd.read_csv(self.filepath)
-        else:
-            raise ValueError('Please save data as a csv')
+        if self.dataset is None:
+            if '.csv' in self.filepath:
+                self.dataset = pd.read_csv(self.filepath)
+            else:
+                raise ValueError('Please save data as a csv')
+        # else dataset already loaded
     
     def check_data_loaded(self):
         if self.dataset is None:
@@ -49,17 +51,19 @@ class GuideDataset:
                   include_activity=False, activity_name='sgRNA Activity'):
         self.check_data_loaded()
         sg_df = (self.dataset[[self.sgrna_seq_col, self.context_seq_col]]
-                 .rename({self.sgrna_seq_col: sg_name, self.context_seq_col: context_name}, axis=1)
-                 .drop_duplicates())
+                 .rename({self.sgrna_seq_col: sg_name, self.context_seq_col: context_name}, axis=1))
         sg_df[pam_name] = sg_df[context_name].str[-6:-3]
         if include_group & (self.sgrna_group_col is not None):
             sg_df[group_name] = self.dataset[self.sgrna_group_col]
         if include_activity:
             sg_df[activity_name] = self.dataset[self.rank_col]
+        sg_df = sg_df.drop_duplicates()
         return sg_df
 
     def set_sgrnas(self):
-        self.sgrnas = set(self.dataset[self.sgrna_seq_col].to_list())
+        if self.sgrnas is None:
+            self.sgrnas = set(self.dataset[self.sgrna_seq_col].to_list())
+        # else sgRNAs already loaded
 
     def get_designs(self):
         if self.sgrnas is None:
@@ -69,6 +73,43 @@ class GuideDataset:
             self.design_file,
             filters=[[('sgRNA Sequence', 'in', sg_list)]])
         return design_df
+
+
+def get_sg_groups_df(datasets):
+    """Get DataFrame of sgRNAs with designs, activity, and target columns
+
+    :param datasets: list of GuideDataset
+    :return: DataFrame
+    """
+    for ds in datasets:
+        ds.load_data()
+        ds.set_sgrnas()
+    sg_df_list = []
+    for ds in datasets:
+        sg_df = ds.get_sg_df(include_group=True, include_activity=True)
+        sg_df['dataset'] = ds.name
+        design_df = ds.get_designs()
+        sg_df = sg_df.merge(design_df, how='inner',
+                            on=['sgRNA Sequence', 'sgRNA Context Sequence', 'PAM Sequence'])
+        sg_df_list.append(sg_df)
+    sg_df_groups = (pd.concat(sg_df_list)
+                    .groupby(['sgRNA Context Sequence'])
+                    .agg(n_conditions=('sgRNA Context Sequence', 'count'),
+                         target=('sgRNA Target', lambda x: ', '.join(set([s.upper() for s in x if not pd.isna(s)]))))
+                    .reset_index())
+    multi_target = sg_df_groups['target'].str.contains(',').sum()
+    print('Context sequences with multiple targets: ' + str(multi_target))
+    # handle singleton case
+    sg_df_groups['target'] = sg_df_groups.apply(lambda row:
+                                                row['target'] if (row['target'] != '') else
+                                                row['sgRNA Context Sequence'],
+                                                axis=1)
+    # Note that 'target' is not in the sg_df_list, and is coming from the sg_df_groups df
+    sg_df_class_groups = (pd.concat(sg_df_list)
+                          .merge(sg_df_groups, how='inner', on='sgRNA Context Sequence')
+                          .sort_values(['dataset', 'target'])
+                          .reset_index(drop=True))
+    return sg_df_class_groups
 
 
 mouse_designs = '/Volumes/GoogleDrive/Shared drives/GPP Cloud /R&D/People/Peter/gpp-annotation-files/sgRNA_design_10090_GRCm38_SpyoCas9_CRISPRko_Ensembl_20200406.parquet'
@@ -130,42 +171,3 @@ wang_data = GuideDataset('../data/processed/Wang2014_activity.csv',
 
 dataset_list = [aguirre_data, chari_data, doench2014_mouse_data, doench2014_human_data,
                 doench2016_data, kim_train_data, kim_test_data, koike_data, shalem_data, wang_data]
-
-
-def get_sg_groups_df(datasets):
-    """Get DataFrame of sgRNAs with designs, activity, and target columns
-
-    :param datasets: list of GuideDataset
-    :return: DataFrame
-    """
-    for ds in datasets:
-        ds.load_data()
-        ds.set_sgrnas()
-    sg_df_list = []
-    for ds in datasets:
-        sg_df = ds.get_sg_df(include_group=True, include_activity=True)
-        sg_df['dataset'] = ds.name
-        design_df = ds.get_designs()
-        sg_df = sg_df.merge(design_df, how='inner',
-                            on=['sgRNA Sequence', 'sgRNA Context Sequence', 'PAM Sequence'])
-        sg_df_list.append(sg_df)
-    sg_df_groups = (pd.concat(sg_df_list)
-                    .groupby(['sgRNA Context Sequence'])
-                    .agg(n_conditions=('sgRNA Context Sequence', 'count'),
-                         target=('sgRNA Target', lambda x: ', '.join(set([s.upper() for s in x if not pd.isna(s)]))))
-                    .reset_index())
-    multi_target = sg_df_groups['target'].str.contains(',').sum()
-    print('Context sequences with multiple targets: ' + str(multi_target))
-    # handle singleton case
-    sg_df_groups['target'] = sg_df_groups.apply(lambda row:
-                                                row['target'] if (row['target'] != '') else
-                                                row['sgRNA Context Sequence'],
-                                                axis=1)
-    # Note that 'target' is not in the sg_df_list, and is coming from the sg_df_groups df
-    sg_df_class_groups = (pd.concat(sg_df_list)
-                          .merge(sg_df_groups, how='inner', on='sgRNA Context Sequence')
-                          .sort_values(['dataset', 'target'])
-                          .reset_index(drop=True))
-    return sg_df_class_groups
-
-
