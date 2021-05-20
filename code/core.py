@@ -127,7 +127,7 @@ def get_tidy_cv_df(sg_df, random_state=7, y_col='dataset', group_col='target'):
     return tidy_cv_df
 
 
-def point_range_plot(df, x, y, ymin, ymax):
+def point_range_plot(df, x, y, ymin, ymax, wspace=0.25, xlabel=None, ylabel=None):
     """Create a pointrange plot
 
     :param df: DataFrame with columns x, y, ymin, ymax
@@ -137,14 +137,19 @@ def point_range_plot(df, x, y, ymin, ymax):
     :param ymax: str
     :return: plotnine plot
     """
+    if xlabel is None:
+        xlabel = x
+    if ylabel is None:
+        ylabel = y
     g = (gg.ggplot(data=df) +
          gg.aes(x=x, y=y,
                 ymin=ymin, ymax=ymax) +
          gg.geom_pointrange() +
          gg.facet_wrap('dataset', scales='free_y') +
-         gg.theme_classic() +
-         gg.theme(subplots_adjust={'wspace': 0.25},
-                  axis_text_x=gg.element_text(angle=45, hjust=1, vjust=1)))
+         gg.theme(subplots_adjust={'wspace': wspace},
+                  axis_text_x=gg.element_text(angle=45, hjust=1, vjust=1)) +
+         gg.xlab(xlabel) +
+         gg.ylab(ylabel))
     return g
 
 
@@ -195,22 +200,25 @@ def get_model_performance(prediction_df, nboots=1000):
                     .sort_values('size', ascending=False))
     predictive_performance_ci['dataset_name'] = pd.Categorical(predictive_performance_ci['dataset_name'],
                                                                categories=dataset_size['dataset_name'])
-    predictive_performance_ci['spearman_rank'] = (predictive_performance_ci.groupby('dataset')
-                                                  ['spearman']
-                                                  .rank())
-    model_avg_rank = (predictive_performance_ci.groupby('model')
-                      .agg({'spearman_rank': 'mean'})
-                      .reset_index()
-                      .sort_values('spearman_rank'))
+    model_avg_spearman = (predictive_performance_ci.groupby('model')
+                          .agg({'spearman': 'mean'})
+                          .reset_index()
+                          .sort_values('spearman'))
     predictive_performance_ci['model'] = pd.Categorical(predictive_performance_ci['model'],
-                                                        categories=model_avg_rank['model'])
+                                                        categories=model_avg_spearman['model'])
     return predictive_performance_ci
 
 
-def lollipop_plot(data, cat, val):
+def lollipop_plot(data, cat, val, xlabel=None, ylabel=None):
+    if xlabel is None:
+        xlabel = val
+    if ylabel is None:
+        ylabel = cat
     g = (gg.ggplot(data) +
          gg.aes(y=val, ymin=0, ymax=val, x=cat, xend=cat) +
          gg.geom_point(size=4, shape='.') +
          gg.geom_linerange() +
+         gg.xlab(ylabel) +  # Flipping before coord flip
+         gg.ylab(xlabel) +
          gg.coord_flip())
     return g
