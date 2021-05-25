@@ -38,6 +38,8 @@ class GuideDataset:
         if self.dataset is None:
             if '.csv' in self.filepath:
                 self.dataset = pd.read_csv(self.filepath)
+            elif '.txt' in self.filepath:
+                self.dataset = pd.read_table(self.filepath)
             else:
                 raise ValueError('Please save data as a csv')
         # else dataset already loaded
@@ -171,3 +173,19 @@ wang_data = GuideDataset('../data/processed/Wang2014_activity.csv',
 
 dataset_list = [aguirre_data, chari_data, doench2014_mouse_data, doench2014_human_data,
                 doench2016_data, kim_train_data, kim_test_data, koike_data, shalem_data, wang_data]
+
+sa_designs = '/Volumes/GoogleDrive/Shared drives/GPP Cloud /R&D/People/Peter/gpp-annotation-files/sgRNA_design_9606_GRCh38_SaurCas9_CRISPRko_Ensembl_20200401.parquet'
+encas12a_designs = '/Volumes/GoogleDrive/Shared drives/GPP Cloud /R&D/People/Peter/gpp-annotation-files/sgRNA_design_9606_GRCh38_enAsCas12a_CRISPRko_Ensembl_20200401.parquet'
+
+doench2018_sa = GuideDataset('../data/external/Supplementary Table 1 Saureus model input.txt',
+                             sgrna_seq_col='Construct Barcode', context_seq_col='30mer',
+                             rank_col='rank', endogenous=True, name='Doench2018_SaCas9',
+                             sgrna_group_col='Target gene', cut_perc_col='Pct Pep',
+                             design_file=sa_designs)
+
+deweirdt2020_encas12a = GuideDataset('../data/external/2019-12-12_encas12a_pam_tiling_train.csv',
+                                     sgrna_seq_col='Construct Barcode', context_seq_col='Context Sequence',
+                                     rank_col='activity_rank', endogenous=True, name='DeWeirdt2020_enCas12a',
+                                     sgrna_group_col='Gene Symbol', design_file=encas12a_designs)
+
+expanded_dataset_list = dataset_list + [doench2018_sa, deweirdt2020_encas12a]
