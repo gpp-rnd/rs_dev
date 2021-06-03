@@ -72,9 +72,9 @@ crispron_activity_predictions = ModelPrediction(prediction_file='../data/externa
                                                 train_20mer_col='sgRNA Sequence',
                                                 merge_sgrna_file=True, model_30mer_col='30mer')
 
-model_prediction_list = [deepspcas9_predictions, rule_set2_predictions,
-                         vbc_activity_predictions, deepcrispr_predictions,
-                         crispron_activity_predictions]
+model_prediction_list = [crispron_activity_predictions, 
+                         deepspcas9_predictions, rule_set2_predictions,
+                         vbc_activity_predictions, deepcrispr_predictions]
 
 vbc_predictions = ModelPrediction('../data/external/vbc_scores_rs_dev.csv', 'VBC score', 'VBC score',
                                   '../data/external/munozS4_azimuth_sgrnas.csv', train_20mer_col='sgRNA Sequence',
