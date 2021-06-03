@@ -222,3 +222,14 @@ def lollipop_plot(data, cat, val, xlabel=None, ylabel=None):
          gg.ylab(xlabel) +
          gg.coord_flip())
     return g
+
+
+def get_j_statistic(tpr, fpr):
+    """Calculate Youdin's J statistic
+
+    :param tpr: list-like
+    :param fpr: list-like
+    :returns j: list-like
+    """
+    j = tpr - fpr
+    return j

@@ -123,6 +123,12 @@ aguirre_data = GuideDataset(filepath='../data/processed/Aguirre2017_activity.csv
                             sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
                             design_file=human_designs)
 
+behan_data = GuideDataset(filepath='../data/processed/Behan2019_activity.csv',
+                          sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
+                          rank_col='avg_rank', endogenous=True, name='Behan2019',
+                          sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
+                          design_file=human_designs)
+
 chari_data = GuideDataset(filepath='../data/processed/Chari2015_activity.csv',
                           sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
                           rank_col='log10(293T mutation rate)', endogenous=False, name='Chari2015')
@@ -171,19 +177,25 @@ wang_data = GuideDataset('../data/processed/Wang2014_activity.csv',
                          sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
                          design_file=human_designs)
 
-dataset_list = [aguirre_data, chari_data, doench2014_mouse_data, doench2014_human_data,
-                doench2016_data, kim_train_data, kim_test_data, koike_data, shalem_data, wang_data]
+xiang_data = GuideDataset(filepath='../data/processed/Xiang2021_activity.csv',
+                          sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
+                          rank_col='total_indel_eff', endogenous=False, name='Xiang2021',
+                          design_file=human_designs)
+
+dataset_list = [aguirre_data, behan_data, chari_data, doench2014_mouse_data, doench2014_human_data,
+                doench2016_data, kim_train_data, kim_test_data, koike_data, shalem_data,
+                wang_data, xiang_data]
 
 sa_designs = '/Volumes/GoogleDrive/Shared drives/GPP Cloud /R&D/People/Peter/gpp-annotation-files/sgRNA_design_9606_GRCh38_SaurCas9_CRISPRko_Ensembl_20200401.parquet'
 encas12a_designs = '/Volumes/GoogleDrive/Shared drives/GPP Cloud /R&D/People/Peter/gpp-annotation-files/sgRNA_design_9606_GRCh38_enAsCas12a_CRISPRko_Ensembl_20200401.parquet'
 
-doench2018_sa = GuideDataset('../data/external/Supplementary Table 1 Saureus model input.txt',
+doench2018_sa = GuideDataset(filepath='../data/external/Supplementary Table 1 Saureus model input.txt',
                              sgrna_seq_col='Construct Barcode', context_seq_col='30mer',
                              rank_col='rank', endogenous=True, name='Doench2018_SaCas9',
                              sgrna_group_col='Target gene', cut_perc_col='Pct Pep',
                              design_file=sa_designs)
 
-deweirdt2020_encas12a = GuideDataset('../data/external/2019-12-12_encas12a_pam_tiling_train.csv',
+deweirdt2020_encas12a = GuideDataset(filepath='../data/external/2019-12-12_encas12a_pam_tiling_train.csv',
                                      sgrna_seq_col='Construct Barcode', context_seq_col='Context Sequence',
                                      rank_col='activity_rank', endogenous=True, name='DeWeirdt2020_enCas12a',
                                      sgrna_group_col='Gene Symbol', design_file=encas12a_designs)
