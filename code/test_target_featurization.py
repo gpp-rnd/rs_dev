@@ -124,7 +124,8 @@ def test_aa_features(sg_designs_endog, aa_seq_df, codon_map):
 
 
 def test_domain_conservation(sg_designs_endog, domain_data, conservation_data):
-    protein_domain_features = ft.get_protein_domain_features(sg_designs_endog, domain_data, sources=None)
+    protein_domain_features = ft.get_protein_domain_features(sg_designs_endog, domain_data, sources=None,
+                                                             downstream=True)
     conservation_features = ft.get_conservation_features(sg_designs_endog, conservation_data,
                                                          small_width=6, large_width=50,
                                                          conservation_column='ranked_conservation')

@@ -3,7 +3,6 @@ from Bio.SeqUtils.ProtParam import ProteinAnalysis
 
 # Updating Design Matrix
 
-
 def add_target_columns(sg_df):
     """Add ['AA Index' and 'Transcript Base'] to design df
 
@@ -18,7 +17,6 @@ def add_target_columns(sg_df):
 
 # Position Features
 
-
 def get_position_features(sg_df):
     """Get  features ['dist from start', 'dist from end', 'dist percent', 'sense']
 
@@ -31,7 +29,6 @@ def get_position_features(sg_df):
 
 
 # Amino Acid Features
-
 
 def get_one_aa_pos(feature_dict, aa_sequence, aas, sequence_order):
     """One hot encode single amino acids
@@ -191,33 +188,45 @@ def get_amino_acid_features(sg_designs, aa_seq_df, width, features):
 
 # Protein Domain
 
-
-def get_protein_domain_features(sg_design_df, protein_domains, sources):
+def get_protein_domain_features(sg_design_df, protein_domains, sources, downstream):
     """Get binary dataframe of protein domains
 
     :param sg_design_df: DataFrame, with columns ['Transcript Base', 'sgRNA Context Sequence', 'AA Index']
     :param protein_domains: DataFrame, with columns ['Transcript Base', 'type']
     :param sources: list. list of database types to include
+    :param downstream: bool
     :return: DataFrame, with binary features for protein domains
     """
     if sources is None:
         sources = ['Pfam', 'PANTHER', 'HAMAP', 'SuperFamily', 'TIGRfam', 'ncoils', 'Gene3D',
-                      'Prosite_patterns', 'Seg', 'SignalP', 'TMHMM', 'MobiDBLite',
-                      'PIRSF', 'PRINTS', 'Smart', 'Prosite_profiles']  # exclude sifts
+                   'Prosite_patterns', 'Seg', 'SignalP', 'TMHMM', 'MobiDBLite',
+                   'PIRSF', 'PRINTS', 'Smart', 'Prosite_profiles']  # exclude sifts
     protein_domains = protein_domains[protein_domains['type'].isin(sources)]
-    domain_feature_df = sg_design_df[['Transcript Base', 'sgRNA Context Sequence', 'AA Index']].copy()
-    domain_feature_df = domain_feature_df.merge(protein_domains,
-                                                how='inner', on='Transcript Base')
-    domain_feature_df = (domain_feature_df[domain_feature_df['AA Index'].between(domain_feature_df['start'],
-                                                                                 domain_feature_df['end'])]
-                         .copy())
-    domain_feature_df = domain_feature_df[['Transcript Base', 'sgRNA Context Sequence', 'type']].drop_duplicates()
-    domain_feature_df['present'] = 1
-    domain_feature_df = (domain_feature_df.pivot_table(values='present',
-                                                       index=['Transcript Base', 'sgRNA Context Sequence'],
-                                                       columns='type',
-                                                       fill_value=0)
+    clean_designs = sg_design_df[['Transcript Base', 'sgRNA Context Sequence', 'AA Index']].copy()
+    designs_domains = clean_designs.merge(protein_domains,
+                                          how='inner', on='Transcript Base')
+    # Note - not every sgRNA will be present in the feaature df
+    filtered_domains = (designs_domains[designs_domains['AA Index'].between(designs_domains['start'],
+                                                                            designs_domains['end'])]
+                        .copy())
+    filtered_domains = filtered_domains[['Transcript Base', 'sgRNA Context Sequence', 'type']].drop_duplicates()
+    filtered_domains['present'] = 1
+    domain_feature_df = (filtered_domains.pivot_table(values='present',
+                                                      index=['Transcript Base', 'sgRNA Context Sequence'],
+                                                      columns='type',fill_value=0)
                          .reset_index())
+    if downstream:
+        filtered_domains_down = (designs_domains[designs_domains['AA Index'].lt(designs_domains['start'])]
+                                 .copy())
+        filtered_domains_down = filtered_domains_down[['Transcript Base', 'sgRNA Context Sequence', 'type']].drop_duplicates()
+        filtered_domains_down['present'] = 1
+        down_domain_feature_df = (filtered_domains_down.pivot_table(values='present',
+                                                                    index=['Transcript Base', 'sgRNA Context Sequence'],
+                                                                    columns='type', fill_value=0))
+        down_domain_feature_df.columns = down_domain_feature_df.columns + '_downstream'
+        down_domain_feature_df = down_domain_feature_df.reset_index()
+        domain_feature_df = (domain_feature_df.merge(down_domain_feature_df, how='outer',
+                                                     on=['Transcript Base', 'sgRNA Context Sequence']))
     # Ensure all domain columns are present for testing
     full_column_df = pd.DataFrame(columns=sources, dtype=int)  # empty
     domain_feature_df = pd.concat([full_column_df, domain_feature_df])
@@ -225,7 +234,6 @@ def get_protein_domain_features(sg_design_df, protein_domains, sources):
 
 
 # Conservation
-
 
 def get_conservation_ranges(cut_pos, small_width, large_width):
     small_range = range(cut_pos - small_width, cut_pos + small_width)
@@ -272,9 +280,11 @@ def get_conservation_features(sg_designs, conservation_df, conservation_column,
     return cons_feature_df
 
 
+# Build Target Features
+
 def build_target_feature_df(sg_designs, features=None,
                             aa_seq_df=None, aa_width=8, aa_features=None,
-                            protein_domain_df=None, protein_domain_sources=None,
+                            protein_domain_df=None, protein_domain_sources=None, downstream_domain=True,
                             conservation_df=None, conservation_column='ranked_conservation',
                             cons_small_width=2, cons_large_width=32):
     """Build the feature matrix for the sgRNA target site
@@ -302,7 +312,8 @@ def build_target_feature_df(sg_designs, features=None,
         position_features = get_position_features(design_df)
         feature_df_dict['position'] = position_features
     if 'domain' in features:
-        domain_features = get_protein_domain_features(design_df, protein_domain_df, sources=protein_domain_sources)
+        domain_features = get_protein_domain_features(design_df, protein_domain_df, sources=protein_domain_sources,
+                                                      downstream=downstream_domain)
         feature_df_dict['domain'] = domain_features
     if 'conservation' in features:
         conservation_features = get_conservation_features(design_df, conservation_df,
