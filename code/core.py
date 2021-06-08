@@ -5,6 +5,12 @@ from sklearn.model_selection import StratifiedGroupKFold
 import numpy as np
 from tqdm import tqdm
 import matplotlib as mpl
+from sklearn import preprocessing
+from scipy import stats
+from sklearn.base import clone
+import gpplot
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def setup_plots(font='Arial', font_size=7):
@@ -222,3 +228,103 @@ def lollipop_plot(data, cat, val, xlabel=None, ylabel=None):
          gg.ylab(xlabel) +
          gg.coord_flip())
     return g
+
+
+def add_xy_line(slope=1, intercept=0, ax=None, linestyle='dashed', linecolor='black'):
+    """Add line with specified slope and intercept to a scatter plot; Default: y=x line
+
+    Parameters
+    ----------
+    slope: float
+        Value of slope of line to be drawn
+    intercept: float
+        Value of intercept of line to be drawn
+    ax: Axis object, optional
+        Plot to add line to
+    linestyle: str, optional
+        Style of line
+    linecolor: str, optional
+        Color of line
+
+    Returns
+    -------
+    matplotlib.axes.Axes
+    """
+    if ax is None:
+        ax = plt.gca()
+    x = np.array(ax.get_xlim())
+    y = intercept + slope * x
+    ax = ax.plot(x, y, linestyle=linestyle, color=linecolor)
+    return ax
+
+
+def add_transform_col(df, col, transform_name, transformed_name, group_col=None):
+    df = df.copy()
+    transforms = {'z-score': preprocessing.StandardScaler(),
+                  'min-max-scaler': preprocessing.MinMaxScaler(),
+                  'robust-scaler': preprocessing.RobustScaler(),
+                  'quantile-uniform': preprocessing.QuantileTransformer(random_state=0),
+                  'quantile-normal': preprocessing.QuantileTransformer(random_state=0, output_distribution='normal'),
+                  'yeo-johnson': preprocessing.PowerTransformer(method='yeo-johnson')}
+    transform = transforms[transform_name]
+    if group_col is None:
+        df[transformed_name] = clone(transform).fit_transform(df[[col]])[:,0]
+    else:
+        df[transformed_name] = (df.groupby(group_col)
+                                [col]
+                                .transform(lambda x: clone(transform).fit_transform(x.to_frame())[:,0]))
+    return df
+
+
+def compare_dataset_transforms(df1, df1_score_col, df1_name,
+                               df2, df2_score_col, df2_name,
+                               merge_col,
+                               df1_group_col=None, df1_avg_col=None,
+                               df2_group_col=None, df2_avg_col=None):
+
+    transform_performance = []
+    for name in ['z-score', 'min-max-scaler', 'robust-scaler',
+                 'quantile-uniform', 'quantile-normal', 'yeo-johnson']:
+        print(name)
+        df1_score = df1.copy()
+        df2_score = df2.copy()
+        df1_score = add_transform_col(df1_score, df1_score_col, name, 'score', group_col=df1_group_col)
+        df2_score = add_transform_col(df2_score, df2_score_col, name, 'score', group_col=df2_group_col)
+        if df1_avg_col:
+            df1_score = (df1_score.groupby(df1_avg_col)
+                         .agg(score=('score', 'mean'))
+                         .reset_index())
+        if df2_avg_col:
+            df2_score = (df2_score.groupby(df2_avg_col)
+                         .agg(score=('score', 'mean'))
+                         .reset_index())
+        merged_dfs = (df1_score.merge(df2_score, how='inner',
+                                      on=merge_col,
+                                      suffixes=(df1_name, df2_name)))
+        merged_dfs['difference'] = merged_dfs['score' + df1_name] - merged_dfs['score' + df2_name]
+        favor_df1 = (merged_dfs['difference'] > 0).sum()
+        favor_df2 = (merged_dfs['difference'] < 0).sum()
+        absolute_favorability = abs(favor_df1 - favor_df2)
+        x = 'score' + df1_name
+        y = 'score' + df2_name
+        plt.subplots(figsize=(4, 4))
+        gpplot.point_densityplot(merged_dfs, x=x,
+                                 y=y)
+        gpplot.add_correlation(merged_dfs, x=x,
+                               y=y, method='pearson')
+        gpplot.add_correlation(merged_dfs, x=x,
+                               y=y, method='spearman',
+                               loc='lower right')
+        add_xy_line()
+        plt.title(name)
+        sns.despine()
+        transform_performance.append({'transform': name,
+                                      'pearsonr': stats.pearsonr(merged_dfs[x],
+                                                                 merged_dfs[y])[0],
+                                      'spearmanr': stats.spearmanr(merged_dfs[x],
+                                                                   merged_dfs[y])[0],
+                                      'absolute_skew': absolute_favorability,
+                                      'absolute_difference': merged_dfs['difference'].abs().mean()})
+    transform_performance_df = (pd.DataFrame(transform_performance))
+    transform_performance_df = transform_performance_df.sort_values('pearsonr', ascending=False)
+    return transform_performance_df

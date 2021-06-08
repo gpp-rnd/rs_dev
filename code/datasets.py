@@ -131,33 +131,33 @@ behan_data = GuideDataset(filepath='../data/processed/Behan2019_activity.csv',
 
 chari_data = GuideDataset(filepath='../data/processed/Chari2015_activity.csv',
                           sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                          rank_col='log10(293T mutation rate)', endogenous=False, name='Chari2015')
+                          rank_col='scaled_mutation_rate', endogenous=False, name='Chari2015')
 
 doench2014_mouse_data = GuideDataset(filepath='../data/processed/Doench2014_mouse_activity.csv',
                                      sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                                     rank_col='gene_rank', endogenous=True, name='Doench2014_mouse',
+                                     rank_col='scaled_lfc', endogenous=True, name='Doench2014_mouse',
                                      sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
                                      design_file=mouse_designs)
 
 doench2014_human_data = GuideDataset(filepath='../data/processed/Doench2014_human_activity.csv',
                                      sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                                     rank_col='avg_rank', endogenous=True, name='Doench2014_human',
+                                     rank_col='scaled_lfc', endogenous=True, name='Doench2014_human',
                                      sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
                                      design_file=human_designs)
 
 doench2016_data = GuideDataset(filepath='../data/processed/Doench2016_activity.csv',
                                sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                               rank_col='avg_rank', endogenous=True, name='Doench2016',
+                               rank_col='scaled_lfc', endogenous=True, name='Doench2016',
                                sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
                                design_file=human_designs)
 
 kim_train_data = GuideDataset(filepath='../data/processed/Kim2019_train_activity.csv',
                               sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                              rank_col='indel_freq', endogenous=False, name='Kim2019_train')
+                              rank_col='scaled_indels', endogenous=False, name='Kim2019_train')
 
 kim_test_data = GuideDataset(filepath='../data/processed/Kim2019_test_activity.csv',
                              sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                             rank_col='indel_freq', endogenous=False, name='Kim2019_test')
+                             rank_col='scaled_indels', endogenous=False, name='Kim2019_test')
 
 koike_data = GuideDataset(filepath='../data/processed/Koike-Yusa2014_activity.csv',
                           sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
@@ -173,13 +173,13 @@ shalem_data = GuideDataset(filepath='../data/processed/Shalem2014_activity.csv',
 
 wang_data = GuideDataset('../data/processed/Wang2014_activity.csv',
                          sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                         rank_col='avg_rank', endogenous=True, name='Wang2014',
+                         rank_col='scaled_neg_lfc', endogenous=True, name='Wang2014',
                          sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
                          design_file=human_designs)
 
 xiang_data = GuideDataset(filepath='../data/processed/Xiang2021_activity.csv',
                           sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                          rank_col='total_indel_eff', endogenous=False, name='Xiang2021',
+                          rank_col='scaled_indel_eff', endogenous=False, name='Xiang2021',
                           design_file=human_designs)
 
 dataset_list = [aguirre_data, behan_data, chari_data, doench2014_mouse_data, doench2014_human_data,

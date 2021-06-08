@@ -66,13 +66,13 @@ vbc_activity_predictions = ModelPrediction(prediction_file='../data/external/vbc
                                            train_sgrna_file='../data/external/munozS4_azimuth_sgrnas.csv',
                                            train_20mer_col='sgRNA Sequence')
 
-crispron_activity_predictions = ModelPrediction(prediction_file='../data/external/crispron_rs_dev_all_sgrnas.csv',
-                                                prediction_col='CRISPRon', name='CRISPRon',
-                                                train_sgrna_file='../data/external/CRISPRon_train.csv',
-                                                train_20mer_col='sgRNA Sequence',
-                                                merge_sgrna_file=True, model_30mer_col='30mer')
+crispron_predictions = ModelPrediction(prediction_file='../data/external/crispron_rs_dev_all_sgrnas.csv',
+                                       prediction_col='CRISPRon', name='CRISPRon',
+                                       train_sgrna_file='../data/external/CRISPRon_train.csv',
+                                       train_20mer_col='sgRNA Sequence',
+                                       merge_sgrna_file=True, model_30mer_col='30mer')
 
-model_prediction_list = [crispron_activity_predictions, 
+model_prediction_list = [crispron_predictions,
                          deepspcas9_predictions, rule_set2_predictions,
                          vbc_activity_predictions, deepcrispr_predictions]
 
