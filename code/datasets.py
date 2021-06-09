@@ -4,7 +4,7 @@ import pandas as pd
 class GuideDataset:
     """Parent class for datasets for modeling sgRNA activity
     """
-    def __init__(self, filepath, sgrna_seq_col, context_seq_col, rank_col, name, endogenous,
+    def __init__(self, filepath, sgrna_seq_col, context_seq_col, rank_col, name, endogenous, genomewide,
                  random_seed=7, sgrna_group_col=None, cut_perc_col=None, classtype='dataset',
                  design_file=None):
         """Initialize class object
@@ -25,6 +25,7 @@ class GuideDataset:
         self.context_seq_col = context_seq_col
         self.rank_col = rank_col
         self.endogenous = endogenous
+        self.genomewide = genomewide
         self.sgrna_group_col = sgrna_group_col
         self.cut_perc_col = cut_perc_col
         self.random_seed = random_seed
@@ -121,66 +122,69 @@ aguirre_data = GuideDataset(filepath='../data/processed/Aguirre2017_activity.csv
                             sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
                             rank_col='avg_rank', endogenous=True, name='Aguirre2017',
                             sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
-                            design_file=human_designs)
+                            design_file=human_designs, genomewide=True)
 
 behan_data = GuideDataset(filepath='../data/processed/Behan2019_activity.csv',
                           sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
                           rank_col='avg_rank', endogenous=True, name='Behan2019',
                           sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
-                          design_file=human_designs)
+                          design_file=human_designs, genomewide=True)
 
 chari_data = GuideDataset(filepath='../data/processed/Chari2015_activity.csv',
                           sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                          rank_col='scaled_mutation_rate', endogenous=False, name='Chari2015')
+                          rank_col='scaled_mutation_rate', endogenous=False, name='Chari2015',
+                          genomewide=False)
 
 doench2014_mouse_data = GuideDataset(filepath='../data/processed/Doench2014_mouse_activity.csv',
                                      sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
                                      rank_col='scaled_lfc', endogenous=True, name='Doench2014_mouse',
                                      sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
-                                     design_file=mouse_designs)
+                                     design_file=mouse_designs, genomewide=False)
 
 doench2014_human_data = GuideDataset(filepath='../data/processed/Doench2014_human_activity.csv',
                                      sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
                                      rank_col='scaled_lfc', endogenous=True, name='Doench2014_human',
                                      sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
-                                     design_file=human_designs)
+                                     design_file=human_designs, genomewide=False)
 
 doench2016_data = GuideDataset(filepath='../data/processed/Doench2016_activity.csv',
                                sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
                                rank_col='scaled_lfc', endogenous=True, name='Doench2016',
                                sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
-                               design_file=human_designs)
+                               design_file=human_designs, genomewide=False)
 
 kim_train_data = GuideDataset(filepath='../data/processed/Kim2019_train_activity.csv',
                               sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                              rank_col='scaled_indels', endogenous=False, name='Kim2019_train')
+                              rank_col='scaled_indels', endogenous=False, name='Kim2019_train',
+                              genomewide=False)
 
 kim_test_data = GuideDataset(filepath='../data/processed/Kim2019_test_activity.csv',
                              sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                             rank_col='scaled_indels', endogenous=False, name='Kim2019_test')
+                             rank_col='scaled_indels', endogenous=False, name='Kim2019_test',
+                             genomewide=False)
 
 koike_data = GuideDataset(filepath='../data/processed/Koike-Yusa2014_activity.csv',
                           sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
                           rank_col='gene_rank', endogenous=True, name='Koike-Yusa2014',
                           sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
-                          design_file=mouse_designs)
+                          design_file=mouse_designs, genomewide=True)
 
 shalem_data = GuideDataset(filepath='../data/processed/Shalem2014_activity.csv',
                            sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
                            rank_col='gene_rank', endogenous=True, name='Shalem_2014',
                            sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
-                           design_file=human_designs)
+                           design_file=human_designs, genomewide=True)
 
 wang_data = GuideDataset('../data/processed/Wang2014_activity.csv',
                          sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
                          rank_col='scaled_neg_lfc', endogenous=True, name='Wang2014',
                          sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
-                         design_file=human_designs)
+                         design_file=human_designs, genomewide=False)
 
 xiang_data = GuideDataset(filepath='../data/processed/Xiang2021_activity.csv',
                           sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
                           rank_col='scaled_indel_eff', endogenous=False, name='Xiang2021',
-                          design_file=human_designs)
+                          design_file=human_designs, genomewide=False)
 
 dataset_list = [aguirre_data, behan_data, chari_data, doench2014_mouse_data, doench2014_human_data,
                 doench2016_data, kim_train_data, kim_test_data, koike_data, shalem_data,
@@ -193,11 +197,12 @@ doench2018_sa = GuideDataset(filepath='../data/external/Supplementary Table 1 Sa
                              sgrna_seq_col='Construct Barcode', context_seq_col='30mer',
                              rank_col='rank', endogenous=True, name='Doench2018_SaCas9',
                              sgrna_group_col='Target gene', cut_perc_col='Pct Pep',
-                             design_file=sa_designs)
+                             design_file=sa_designs, genomewide=False)
 
 deweirdt2020_encas12a = GuideDataset(filepath='../data/external/2019-12-12_encas12a_pam_tiling_train.csv',
                                      sgrna_seq_col='Construct Barcode', context_seq_col='Context Sequence',
                                      rank_col='activity_rank', endogenous=True, name='DeWeirdt2020_enCas12a',
-                                     sgrna_group_col='Gene Symbol', design_file=encas12a_designs)
+                                     sgrna_group_col='Gene Symbol', design_file=encas12a_designs,
+                                     genomewide=False)
 
 expanded_dataset_list = dataset_list + [doench2018_sa, deweirdt2020_encas12a]

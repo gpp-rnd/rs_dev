@@ -159,7 +159,7 @@ def point_range_plot(df, x, y, ymin, ymax, wspace=0.25, xlabel=None, ylabel=None
     return g
 
 
-def calculate_prediction_stats(prediction_df):
+def calculate_prediction_cors(prediction_df):
     """Calculate statistics from prediction data
 
     :param prediction_df: DataFrame
@@ -175,20 +175,20 @@ def calculate_prediction_stats(prediction_df):
     return prediction_stats
 
 
-def get_model_performance(prediction_df, nboots=1000):
+def get_model_correlations(prediction_df, nboots=1000):
     """Evaluate the predictive performance of model
 
     :param prediction_df: DataFrame, predictions with columns ['sgRNA Activity', 'dataset', 'model', 'prediction']
     :param nboots: int, number of bootstrap resamples
     :return: DataFrame,
     """
-    performance_point_estimates = calculate_prediction_stats(prediction_df)
+    performance_point_estimates = calculate_prediction_cors(prediction_df)
     bootstrap_prediction_list = []
     for i in tqdm(range(nboots)):
         resampled_predictions = (prediction_df.groupby(['dataset', 'model'])
                                  .sample(frac=1, replace=True,
                                          random_state=i))
-        predictive_performance = calculate_prediction_stats(resampled_predictions)
+        predictive_performance = calculate_prediction_cors(resampled_predictions)
         bootstrap_prediction_list.append(predictive_performance)
     predictive_performance_ci = (pd.concat(bootstrap_prediction_list)
                                  .reset_index(drop=True)
@@ -213,6 +213,59 @@ def get_model_performance(prediction_df, nboots=1000):
     predictive_performance_ci['model'] = pd.Categorical(predictive_performance_ci['model'],
                                                         categories=model_avg_spearman['model'])
     return predictive_performance_ci
+
+
+def calculate_model_rank_loss(prediction_df):
+    prediction_df = prediction_df.copy()
+    prediction_df['true_rank'] = (prediction_df.groupby(['dataset', 'model', 'sgRNA Target'])
+                                  ['sgRNA Activity']
+                                  .rank(ascending=False))
+    prediction_df['predicted_rank'] = (prediction_df.groupby(['dataset', 'model', 'sgRNA Target'])
+                                       ['prediction']
+                                       .rank(ascending=False))
+    prediction_df['abs_rank_difference'] = (prediction_df['true_rank'] -
+                                            prediction_df['predicted_rank']).abs()
+    absolute_rank_difference = (prediction_df.groupby(['dataset', 'model'])
+                                .agg(avg_abs_rank_diff=('abs_rank_difference', 'mean'),
+                                     size=('sgRNA Sequence', 'count'))
+                                .reset_index())
+    return absolute_rank_difference
+
+
+def get_model_rank_loss(prediction_df, nboots=1000):
+    point_estimate = calculate_model_rank_loss(prediction_df)
+    bootstrap_prediction_list = []
+    for i in tqdm(range(nboots)):
+        resampled_genes = (prediction_df[['sgRNA Target']]
+                           .drop_duplicates()
+                           .sample(frac=0.8, replace=False,
+                                   random_state=i))
+        resampled_predictions = prediction_df.merge(resampled_genes, how='inner',
+                                                    on='sgRNA Target')
+        predictive_performance = calculate_model_rank_loss(resampled_predictions)
+        bootstrap_prediction_list.append(predictive_performance)
+    predictive_performance_ci = (pd.concat(bootstrap_prediction_list)
+                                 .reset_index(drop=True)
+                                 .groupby(['dataset', 'model'])
+                                 .agg(avg_abs_rank_diff_975=('avg_abs_rank_diff', lambda x: np.percentile(x, 97.5)),
+                                      avg_abs_rank_diff_025=('avg_abs_rank_diff', lambda x: np.percentile(x, 2.5)))
+                                 .reset_index()
+                                 .merge(point_estimate, how='inner',
+                                        on=['dataset', 'model']))
+    predictive_performance_ci['dataset_name'] = (predictive_performance_ci['dataset'] + '\n(n = ' +
+                                                 predictive_performance_ci['size'].astype(int).astype(str) + ')')
+    dataset_size = (predictive_performance_ci[['dataset_name', 'size']].drop_duplicates()
+                    .sort_values('size', ascending=False))
+    predictive_performance_ci['dataset_name'] = pd.Categorical(predictive_performance_ci['dataset_name'],
+                                                               categories=dataset_size['dataset_name'])
+    model_avg_rank_diff = (predictive_performance_ci.groupby('model')
+                           .agg({'avg_abs_rank_diff': 'mean'})
+                           .reset_index()
+                           .sort_values('avg_abs_rank_diff', ascending=False))
+    predictive_performance_ci['model'] = pd.Categorical(predictive_performance_ci['model'],
+                                                        categories=model_avg_rank_diff['model'])
+    return predictive_performance_ci
+
 
 
 def lollipop_plot(data, cat, val, xlabel=None, ylabel=None):
