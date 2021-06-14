@@ -381,3 +381,16 @@ def compare_dataset_transforms(df1, df1_score_col, df1_name,
     transform_performance_df = (pd.DataFrame(transform_performance))
     transform_performance_df = transform_performance_df.sort_values('pearsonr', ascending=False)
     return transform_performance_df
+
+
+def no_clip(ax):
+    "Turn off all clipping in axes ax; call immediately before drawing"
+    ax.set_clip_on(False)
+    artists = []
+    artists.extend(ax.collections)
+    artists.extend(ax.patches)
+    artists.extend(ax.lines)
+    artists.extend(ax.texts)
+    artists.extend(ax.artists)
+    for a in artists:
+        a.set_clip_on(False)
