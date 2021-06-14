@@ -283,7 +283,7 @@ def lollipop_plot(data, cat, val, xlabel=None, ylabel=None):
     return g
 
 
-def add_xy_line(slope=1, intercept=0, ax=None, linestyle='dashed', linecolor='black'):
+def add_xy_line(slope=1, intercept=0, ax=None, linestyle='dashed', color='black', **kwargs):
     """Add line with specified slope and intercept to a scatter plot; Default: y=x line
 
     Parameters
@@ -296,7 +296,7 @@ def add_xy_line(slope=1, intercept=0, ax=None, linestyle='dashed', linecolor='bl
         Plot to add line to
     linestyle: str, optional
         Style of line
-    linecolor: str, optional
+    color: str, optional
         Color of line
 
     Returns
@@ -307,7 +307,7 @@ def add_xy_line(slope=1, intercept=0, ax=None, linestyle='dashed', linecolor='bl
         ax = plt.gca()
     x = np.array(ax.get_xlim())
     y = intercept + slope * x
-    ax = ax.plot(x, y, linestyle=linestyle, color=linecolor)
+    ax = ax.plot(x, y, linestyle=linestyle, color=color, **kwargs)
     return ax
 
 

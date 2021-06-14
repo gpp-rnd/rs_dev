@@ -17,13 +17,14 @@ def add_target_columns(sg_df):
 
 # Position Features
 
-def get_position_features(sg_df):
+def get_position_features(sg_df, id_cols):
     """Get  features ['dist from start', 'dist from end', 'dist percent', 'sense']
 
     :param sg_df: DataFrame
+    :param id_cols: list
     :return: DataFrame
     """
-    position_df = sg_df[['sgRNA Context Sequence', 'Transcript Base', 'Target Cut %']].copy()
+    position_df = sg_df[id_cols + ['Target Cut %']].copy()
     position_df['sense'] = sg_df['Orientation'] == 'sense'
     return position_df
 
@@ -158,7 +159,7 @@ def featurize_aa_seqs(aa_sequences, features=None):
     return feature_matrix
 
 
-def get_amino_acid_features(sg_designs, aa_seq_df, width, features):
+def get_amino_acid_features(sg_designs, aa_seq_df, width, features, id_cols):
     """Featurize amino acid sequences
 
     :param sg_designs: DataFrame
@@ -167,9 +168,9 @@ def get_amino_acid_features(sg_designs, aa_seq_df, width, features):
     :param feature: list
     :return: DataFrame
     """
-    sg_aas = (aa_seq_df.merge(sg_designs[['Transcript Base', 'sgRNA Context Sequence', 'AA Index', 'Orientation']],
+    sg_aas = (aa_seq_df.merge(sg_designs[id_cols + ['Transcript Base', 'AA Index']],
                               how='inner',
-                              on='Transcript Base'))
+                              on=['Transcript Base', 'Target Transcript']))
     padding = '-' * (width + 1)
     sg_aas['extended_seq'] = padding + sg_aas['seq'] + '*' + padding
     sg_aas['AA Index pad'] = sg_aas['AA Index'] + width + 1
@@ -180,7 +181,7 @@ def get_amino_acid_features(sg_designs, aa_seq_df, width, features):
     sg_aas['AA Subsequence'] = sg_aas.apply(lambda row: row['extended_seq'][(row['seq_start'] - 1):row['seq_end']],
                                             axis=1)
     aa_features = featurize_aa_seqs(sg_aas['AA Subsequence'], features=features)
-    aa_features_annot = pd.concat([sg_aas[['Transcript Base', 'sgRNA Context Sequence', 'AA Subsequence']]
+    aa_features_annot = pd.concat([sg_aas[id_cols + ['AA Subsequence']]
                                    .reset_index(drop=True),
                                    aa_features.reset_index(drop=True)], axis=1)
     return aa_features_annot
@@ -188,12 +189,13 @@ def get_amino_acid_features(sg_designs, aa_seq_df, width, features):
 
 # Protein Domain
 
-def get_protein_domain_features(sg_design_df, protein_domains, sources):
+def get_protein_domain_features(sg_design_df, protein_domains, sources, id_cols):
     """Get binary dataframe of protein domains
 
     :param sg_design_df: DataFrame, with columns ['Transcript Base', 'sgRNA Context Sequence', 'AA Index']
     :param protein_domains: DataFrame, with columns ['Transcript Base', 'type']
     :param sources: list. list of database types to include
+    :param id_cols: list
     :return: DataFrame, with binary features for protein domains
     """
     if sources is None:
@@ -201,21 +203,21 @@ def get_protein_domain_features(sg_design_df, protein_domains, sources):
                    'Prosite_patterns', 'Seg', 'SignalP', 'TMHMM', 'MobiDBLite',
                    'PIRSF', 'PRINTS', 'Smart', 'Prosite_profiles']  # exclude sifts
     protein_domains = protein_domains[protein_domains['type'].isin(sources)]
-    clean_designs = sg_design_df[['Transcript Base', 'sgRNA Context Sequence', 'AA Index']].copy()
+    clean_designs = sg_design_df[id_cols + ['Transcript Base', 'AA Index']].copy()
     designs_domains = clean_designs.merge(protein_domains,
                                           how='inner', on='Transcript Base')
-    # Note - not every sgRNA will be present in the feaature df
+    # Note - not every sgRNA will be present in the feature df
     filtered_domains = (designs_domains[designs_domains['AA Index'].between(designs_domains['start'],
                                                                             designs_domains['end'])]
                         .copy())
-    filtered_domains = filtered_domains[['Transcript Base', 'sgRNA Context Sequence', 'type']].drop_duplicates()
+    filtered_domains = filtered_domains[id_cols + ['type']].drop_duplicates()
     filtered_domains['present'] = 1
     domain_feature_df = (filtered_domains.pivot_table(values='present',
-                                                      index=['Transcript Base', 'sgRNA Context Sequence'],
-                                                      columns='type',fill_value=0)
+                                                      index=id_cols,
+                                                      columns='type', fill_value=0)
                          .reset_index())
     # Ensure all domain columns are present for testing
-    full_column_df = pd.DataFrame(columns=sources, dtype=int)  # empty
+    full_column_df = pd.DataFrame(columns=id_cols + sources, dtype=int)  # empty
     domain_feature_df = pd.concat([full_column_df, domain_feature_df])
     return domain_feature_df
 
@@ -229,7 +231,7 @@ def get_conservation_ranges(cut_pos, small_width, large_width):
 
 
 def get_conservation_features(sg_designs, conservation_df, conservation_column,
-                              small_width, large_width):
+                              small_width, large_width, id_cols):
     """Get conservation features
 
     :param sg_designs: DataFrame
@@ -239,7 +241,7 @@ def get_conservation_features(sg_designs, conservation_df, conservation_column,
     :param large_width: int, large window length to average scores in the one direction
     :return: DataFrame of conservation features
     """
-    sg_designs_width = sg_designs[['sgRNA Context Sequence', 'Transcript Base', 'Target Cut Length']].copy()
+    sg_designs_width = sg_designs[id_cols + ['Transcript Base']].copy()
     sg_designs_width['target position small'], sg_designs_width['target position large'] =  \
         zip(*sg_designs_width['Target Cut Length']
             .apply(get_conservation_ranges, small_width=small_width,
@@ -248,8 +250,8 @@ def get_conservation_features(sg_designs, conservation_df, conservation_column,
                                 .rename({'target position small': 'target position'}, axis=1)
                                 .explode('target position')
                                 .merge(conservation_df, how='inner',
-                                       on=['Transcript Base', 'target position'])
-                                .groupby(['Transcript Base', 'sgRNA Context Sequence'])
+                                       on=['Target Transcript', 'Transcript Base', 'target position'])
+                                .groupby(id_cols)
                                 .agg(cons=(conservation_column, 'mean'))
                                 .rename({'cons': 'cons_' + str(small_width * 2)}, axis=1)
                                 .reset_index())
@@ -257,13 +259,13 @@ def get_conservation_features(sg_designs, conservation_df, conservation_column,
                                 .rename({'target position large': 'target position'}, axis=1)
                                 .explode('target position')
                                 .merge(conservation_df, how='inner',
-                                       on=['Transcript Base', 'target position'])
-                                .groupby(['Transcript Base', 'sgRNA Context Sequence'])
+                                       on=['Target Transcript', 'Transcript Base', 'target position'])
+                                .groupby(id_cols)
                                 .agg(cons=(conservation_column, 'mean'))
                                 .rename({'cons': 'cons_' + str(large_width * 2)}, axis=1)
                                 .reset_index())
     cons_feature_df = small_width_conservation.merge(large_width_conservation, how='outer',
-                                                     on=['sgRNA Context Sequence', 'Transcript Base'])
+                                                     on=id_cols)
     return cons_feature_df
 
 
@@ -273,7 +275,8 @@ def build_target_feature_df(sg_designs, features=None,
                             aa_seq_df=None, aa_width=8, aa_features=None,
                             protein_domain_df=None, protein_domain_sources=None,
                             conservation_df=None, conservation_column='ranked_conservation',
-                            cons_small_width=2, cons_large_width=32):
+                            cons_small_width=2, cons_large_width=32,
+                            id_cols=None):
     """Build the feature matrix for the sgRNA target site
 
     :param sg_designs: DataFrame
@@ -292,28 +295,32 @@ def build_target_feature_df(sg_designs, features=None,
         feature_list: list
     """
     if features is None:
-        features = ['position', 'aa', 'domain', 'conservation']
+        features = ['position', 'aa', 'domain']
+    if id_cols is None:
+        id_cols = ['sgRNA Context Sequence', 'Target Cut Length',
+                   'Target Transcript', 'Orientation']
     design_df = add_target_columns(sg_designs)
     feature_df_dict = dict()
     if 'position' in features:
-        position_features = get_position_features(design_df)
+        position_features = get_position_features(design_df, id_cols)
         feature_df_dict['position'] = position_features
     if 'domain' in features:
-        domain_features = get_protein_domain_features(design_df, protein_domain_df, sources=protein_domain_sources)
+        domain_features = get_protein_domain_features(design_df, protein_domain_df, protein_domain_sources, id_cols)
         feature_df_dict['domain'] = domain_features
     if 'conservation' in features:
         conservation_features = get_conservation_features(design_df, conservation_df,
-                                                          conservation_column=conservation_column,
-                                                          small_width=cons_small_width, large_width=cons_large_width)
+                                                          conservation_column,
+                                                          cons_small_width, cons_large_width,
+                                                          id_cols)
         feature_df_dict['conservation'] = conservation_features
     if 'aa' in features:
-        aa_features = get_amino_acid_features(design_df, aa_seq_df, width=aa_width, features=aa_features)
+        aa_features = get_amino_acid_features(design_df, aa_seq_df, aa_width, aa_features, id_cols)
         feature_df_dict['aa'] = aa_features
-    feature_df = design_df[['sgRNA Context Sequence', 'Transcript Base', 'AA Index']]
+    feature_df = design_df[id_cols]
     for key, df in feature_df_dict.items():
-        feature_df = pd.merge(feature_df, df, how='left')
+        feature_df = pd.merge(feature_df, df, how='left', on=id_cols)
     full_feature_list = list(feature_df.columns)
-    remove_cols = ['sgRNA Context Sequence', 'Transcript Base', 'AA Index', 'AA Subsequence']
+    remove_cols = id_cols + ['Transcript Base', 'AA Index', 'AA Subsequence']
     for col in remove_cols:
         if col in full_feature_list:
             full_feature_list.remove(col)

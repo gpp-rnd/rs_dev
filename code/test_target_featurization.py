@@ -32,9 +32,6 @@ def sg_designs_endog():
 @pytest.fixture
 def aa_seq_df(sg_designs_endog):
     aa_seqs = pd.read_csv('../data/interim/aa_seqs.csv')
-    # TODO - move to database query step
-    # TODO incorporate filtering into database query
-    aa_seqs = aa_seqs.rename({'query': 'Transcript Base'}, axis=1)
     filtered_aa_seqs = aa_seqs[aa_seqs['Transcript Base'].isin(sg_designs_endog['Transcript Base'])]
     return filtered_aa_seqs
 
@@ -61,10 +58,6 @@ def conservation_data(sg_designs_endog):
     conservation_df = (pd.read_parquet('../data/interim/conservation.parquet',
                                        filters=[[('Transcript Base', 'in', transcript_bases)]])
                        .reset_index(drop=True))
-    # TODO - move to database query step
-    conservation_df['ranked_conservation'] = (conservation_df.groupby('Transcript Base')
-                                              ['conservation']
-                                              .rank(pct=True))
     return conservation_df
 
 
@@ -105,7 +98,9 @@ def test_aa_features(sg_designs_endog, aa_seq_df, codon_map):
     aa_features = ft.get_amino_acid_features(sg_designs_endog, aa_seq_df, width=10,
                                              features=['Pos. Ind. 1mer', 'Pos. Ind. 2mer', 'Pos. Dep. 1mer',
                                                        'Hydrophobicity', 'Aromaticity',
-                                                       'Isoelectric Point', 'Secondary Structure'])
+                                                       'Isoelectric Point', 'Secondary Structure'],
+                                             id_cols=['sgRNA Context Sequence', 'Target Cut Length',
+                                                      'Target Transcript', 'Orientation'])
     assert (aa_features['AA Subsequence'].str.len() == 20).all()
     row = aa_features.sample(1, random_state=7).iloc[0, :]
     subseq = row['AA Subsequence']
@@ -124,12 +119,18 @@ def test_aa_features(sg_designs_endog, aa_seq_df, codon_map):
 
 
 def test_domain_conservation(sg_designs_endog, domain_data, conservation_data):
-    protein_domain_features = ft.get_protein_domain_features(sg_designs_endog, domain_data, sources=None)
+    protein_domain_features = ft.get_protein_domain_features(sg_designs_endog, domain_data, sources=None,
+                                                             id_cols=['sgRNA Context Sequence', 'Target Cut Length',
+                                                                      'Target Transcript', 'Orientation'])
     conservation_features = ft.get_conservation_features(sg_designs_endog, conservation_data,
                                                          small_width=6, large_width=50,
-                                                         conservation_column='ranked_conservation')
-    merged_features = protein_domain_features.merge(conservation_features, how='inner', on=['Transcript Base',
-                                                                                            'sgRNA Context Sequence'])
+                                                         conservation_column='ranked_conservation',
+                                                         id_cols=['sgRNA Context Sequence', 'Target Cut Length',
+                                                                  'Target Transcript', 'Orientation'])
+    merged_features = protein_domain_features.merge(conservation_features, how='inner', on=['sgRNA Context Sequence',
+                                                                                            'Target Cut Length',
+                                                                                            'Target Transcript',
+                                                                                            'Orientation'])
     smart_avg_cons = merged_features.loc[merged_features['Smart'].astype(bool), 'cons_12'].mean()
     non_smart_avg_cons = merged_features.loc[~merged_features['Smart'].astype(bool), 'cons_12'].mean()
     assert smart_avg_cons > non_smart_avg_cons

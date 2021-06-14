@@ -50,12 +50,15 @@ class GuideDataset:
             raise ValueError('Dataset must be loaded')
     
     def get_sg_df(self, sg_name='sgRNA Sequence', context_name='sgRNA Context Sequence', 
-                  pam_name='PAM Sequence', include_group=False, group_name='sgRNA Target',
+                  include_pam=True, pam_name='PAM Sequence',
+                  include_group=False, group_name='sgRNA Target',
                   include_activity=False, activity_name='sgRNA Activity'):
         self.check_data_loaded()
         sg_df = (self.dataset[[self.sgrna_seq_col, self.context_seq_col]]
                  .rename({self.sgrna_seq_col: sg_name, self.context_seq_col: context_name}, axis=1))
-        sg_df[pam_name] = sg_df[context_name].str[-6:-3]
+        if include_pam:
+            # PAM for SpCas9
+            sg_df[pam_name] = sg_df[context_name].str[-6:-3]
         if include_group & (self.sgrna_group_col is not None):
             sg_df[group_name] = self.dataset[self.sgrna_group_col]
         if include_activity:
@@ -199,4 +202,4 @@ deweirdt2020_encas12a = GuideDataset(filepath='../data/external/2019-12-12_encas
                                      sgrna_group_col='Gene Symbol', design_file=encas12a_designs,
                                      genomewide=False)
 
-expanded_dataset_list = dataset_list + [doench2018_sa, deweirdt2020_encas12a]
+expanded_dataset_list = [doench2018_sa, deweirdt2020_encas12a]
