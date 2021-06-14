@@ -167,7 +167,7 @@ def get_amino_acid_features(sg_designs, aa_seq_df, width, features):
     :param feature: list
     :return: DataFrame
     """
-    sg_aas = (aa_seq_df.merge(sg_designs[['Transcript Base', 'sgRNA Context Sequence', 'AA Index']],
+    sg_aas = (aa_seq_df.merge(sg_designs[['Transcript Base', 'sgRNA Context Sequence', 'AA Index', 'Orientation']],
                               how='inner',
                               on='Transcript Base'))
     padding = '-' * (width + 1)
@@ -177,7 +177,7 @@ def get_amino_acid_features(sg_designs, aa_seq_df, width, features):
     sg_aas['seq_start'] = sg_aas['AA Index pad'] - width
     sg_aas['seq_end'] = sg_aas['AA Index pad'] + width - 1
     # Zero-indexed for python
-    sg_aas['AA Subsequence'] = sg_aas.apply(lambda row: row['extended_seq'][row['seq_start'] - 1:row['seq_end']],
+    sg_aas['AA Subsequence'] = sg_aas.apply(lambda row: row['extended_seq'][(row['seq_start'] - 1):row['seq_end']],
                                             axis=1)
     aa_features = featurize_aa_seqs(sg_aas['AA Subsequence'], features=features)
     aa_features_annot = pd.concat([sg_aas[['Transcript Base', 'sgRNA Context Sequence', 'AA Subsequence']]
@@ -188,13 +188,12 @@ def get_amino_acid_features(sg_designs, aa_seq_df, width, features):
 
 # Protein Domain
 
-def get_protein_domain_features(sg_design_df, protein_domains, sources, downstream):
+def get_protein_domain_features(sg_design_df, protein_domains, sources):
     """Get binary dataframe of protein domains
 
     :param sg_design_df: DataFrame, with columns ['Transcript Base', 'sgRNA Context Sequence', 'AA Index']
     :param protein_domains: DataFrame, with columns ['Transcript Base', 'type']
     :param sources: list. list of database types to include
-    :param downstream: bool
     :return: DataFrame, with binary features for protein domains
     """
     if sources is None:
@@ -215,18 +214,6 @@ def get_protein_domain_features(sg_design_df, protein_domains, sources, downstre
                                                       index=['Transcript Base', 'sgRNA Context Sequence'],
                                                       columns='type',fill_value=0)
                          .reset_index())
-    if downstream:
-        filtered_domains_down = (designs_domains[designs_domains['AA Index'].lt(designs_domains['start'])]
-                                 .copy())
-        filtered_domains_down = filtered_domains_down[['Transcript Base', 'sgRNA Context Sequence', 'type']].drop_duplicates()
-        filtered_domains_down['present'] = 1
-        down_domain_feature_df = (filtered_domains_down.pivot_table(values='present',
-                                                                    index=['Transcript Base', 'sgRNA Context Sequence'],
-                                                                    columns='type', fill_value=0))
-        down_domain_feature_df.columns = down_domain_feature_df.columns + '_downstream'
-        down_domain_feature_df = down_domain_feature_df.reset_index()
-        domain_feature_df = (domain_feature_df.merge(down_domain_feature_df, how='outer',
-                                                     on=['Transcript Base', 'sgRNA Context Sequence']))
     # Ensure all domain columns are present for testing
     full_column_df = pd.DataFrame(columns=sources, dtype=int)  # empty
     domain_feature_df = pd.concat([full_column_df, domain_feature_df])
@@ -284,7 +271,7 @@ def get_conservation_features(sg_designs, conservation_df, conservation_column,
 
 def build_target_feature_df(sg_designs, features=None,
                             aa_seq_df=None, aa_width=8, aa_features=None,
-                            protein_domain_df=None, protein_domain_sources=None, downstream_domain=True,
+                            protein_domain_df=None, protein_domain_sources=None,
                             conservation_df=None, conservation_column='ranked_conservation',
                             cons_small_width=2, cons_large_width=32):
     """Build the feature matrix for the sgRNA target site
@@ -312,8 +299,7 @@ def build_target_feature_df(sg_designs, features=None,
         position_features = get_position_features(design_df)
         feature_df_dict['position'] = position_features
     if 'domain' in features:
-        domain_features = get_protein_domain_features(design_df, protein_domain_df, sources=protein_domain_sources,
-                                                      downstream=downstream_domain)
+        domain_features = get_protein_domain_features(design_df, protein_domain_df, sources=protein_domain_sources)
         feature_df_dict['domain'] = domain_features
     if 'conservation' in features:
         conservation_features = get_conservation_features(design_df, conservation_df,

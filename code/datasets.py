@@ -124,12 +124,6 @@ aguirre_data = GuideDataset(filepath='../data/processed/Aguirre2017_activity.csv
                             sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
                             design_file=human_designs, genomewide=True)
 
-behan_data = GuideDataset(filepath='../data/processed/Behan2019_activity.csv',
-                          sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                          rank_col='avg_rank', endogenous=True, name='Behan2019',
-                          sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
-                          design_file=human_designs, genomewide=True)
-
 chari_data = GuideDataset(filepath='../data/processed/Chari2015_activity.csv',
                           sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
                           rank_col='scaled_mutation_rate', endogenous=False, name='Chari2015',
@@ -186,7 +180,7 @@ xiang_data = GuideDataset(filepath='../data/processed/Xiang2021_activity.csv',
                           rank_col='scaled_indel_eff', endogenous=False, name='Xiang2021',
                           design_file=human_designs, genomewide=False)
 
-dataset_list = [aguirre_data, behan_data, chari_data, doench2014_mouse_data, doench2014_human_data,
+dataset_list = [aguirre_data, chari_data, doench2014_mouse_data, doench2014_human_data,
                 doench2016_data, kim_train_data, kim_test_data, koike_data, shalem_data,
                 wang_data, xiang_data]
 
