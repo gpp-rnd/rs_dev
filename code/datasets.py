@@ -123,7 +123,7 @@ human_designs = '/Volumes/GoogleDrive/Shared drives/GPP Cloud /R&D/People/Peter/
 
 aguirre_data = GuideDataset(filepath='../data/processed/Aguirre2017_activity.csv',
                             sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                            rank_col='avg_rank', endogenous=True, name='Aguirre2017',
+                            rank_col='avg_mean_centered_neg_lfc', endogenous=True, name='Aguirre2017',
                             sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
                             design_file=human_designs, genomewide=True)
 
@@ -162,13 +162,13 @@ kim_test_data = GuideDataset(filepath='../data/processed/Kim2019_test_activity.c
 
 koike_data = GuideDataset(filepath='../data/processed/Koike-Yusa2014_activity.csv',
                           sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                          rank_col='gene_rank', endogenous=True, name='Koike-Yusa2014',
+                          rank_col='mean_centered_neg_lfc', endogenous=True, name='Koike-Yusa2014',
                           sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
                           design_file=mouse_designs, genomewide=True)
 
 shalem_data = GuideDataset(filepath='../data/processed/Shalem2014_activity.csv',
                            sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                           rank_col='gene_rank', endogenous=True, name='Shalem_2014',
+                           rank_col='mean_centered_neg_lfc', endogenous=True, name='Shalem_2014',
                            sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
                            design_file=human_designs, genomewide=True)
 
@@ -186,6 +186,15 @@ xiang_data = GuideDataset(filepath='../data/processed/Xiang2021_activity.csv',
 dataset_list = [aguirre_data, chari_data, doench2014_mouse_data, doench2014_human_data,
                 doench2016_data, kim_train_data, kim_test_data, koike_data, shalem_data,
                 wang_data, xiang_data]
+
+# non-canonical tracr
+behan_data = GuideDataset(filepath='../data/processed/Behan2019_activity.csv',
+                          sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
+                          rank_col='avg_mean_centered_neg_lfc', endogenous=True, name='Behan2019',
+                          sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
+                          design_file=human_designs, genomewide=True)
+
+nc_tracr_dataset_list = [behan_data]
 
 sa_designs = '/Volumes/GoogleDrive/Shared drives/GPP Cloud /R&D/People/Peter/gpp-annotation-files/sgRNA_design_9606_GRCh38_SaurCas9_CRISPRko_Ensembl_20200401.parquet'
 encas12a_designs = '/Volumes/GoogleDrive/Shared drives/GPP Cloud /R&D/People/Peter/gpp-annotation-files/sgRNA_design_9606_GRCh38_enAsCas12a_CRISPRko_Ensembl_20200401.parquet'
