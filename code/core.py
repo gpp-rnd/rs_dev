@@ -321,11 +321,11 @@ def add_transform_col(df, col, transform_name, transformed_name, group_col=None)
                   'yeo-johnson': preprocessing.PowerTransformer(method='yeo-johnson')}
     transform = transforms[transform_name]
     if group_col is None:
-        df[transformed_name] = clone(transform).fit_transform(df[[col]])[:,0]
+        df[transformed_name] = clone(transform).fit_transform(df[[col]])[:, 0]
     else:
         df[transformed_name] = (df.groupby(group_col)
                                 [col]
-                                .transform(lambda x: clone(transform).fit_transform(x.to_frame())[:,0]))
+                                .transform(lambda x: clone(transform).fit_transform(x.to_frame())[:, 0]))
     return df
 
 

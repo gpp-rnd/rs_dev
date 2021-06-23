@@ -6,7 +6,7 @@ class GuideDataset:
     """
     def __init__(self, filepath, sgrna_seq_col, context_seq_col, rank_col, name, endogenous, genomewide,
                  random_seed=7, sgrna_group_col=None, cut_perc_col=None, classtype='dataset',
-                 design_file=None):
+                 design_file=None, tracr='Hsu2013'):
         """Initialize class object
 
         :param filepath: str, path to activity data
@@ -34,6 +34,7 @@ class GuideDataset:
         self.design_file = design_file
         self.dataset = None
         self.sgrnas = None
+        self.tracr = tracr
 
     def load_data(self):
         if self.dataset is None:
@@ -183,18 +184,21 @@ xiang_data = GuideDataset(filepath='../data/processed/Xiang2021_activity.csv',
                           rank_col='scaled_indel_eff', endogenous=False, name='Xiang2021',
                           design_file=human_designs, genomewide=False)
 
-dataset_list = [aguirre_data, chari_data, doench2014_mouse_data, doench2014_human_data,
-                doench2016_data, kim_train_data, kim_test_data, koike_data, shalem_data,
-                wang_data, xiang_data]
-
-# non-canonical tracr
 behan_data = GuideDataset(filepath='../data/processed/Behan2019_activity.csv',
                           sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
                           rank_col='avg_mean_centered_neg_lfc', endogenous=True, name='Behan2019',
                           sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
-                          design_file=human_designs, genomewide=True)
+                          design_file=human_designs, genomewide=True, tracr='Chen2013')
 
-nc_tracr_dataset_list = [behan_data]
+munoz_data = GuideDataset(filepath='../data/processed/Munoz2016_activity.csv',
+                          sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
+                          rank_col='gene_scaled_neg_zscore', endogenous=True, name='Munoz2016',
+                          sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
+                          design_file=human_designs, genomewide=False, tracr='Chen2013')
+
+dataset_list = [aguirre_data, chari_data, doench2014_mouse_data, doench2014_human_data,
+                doench2016_data, kim_train_data, kim_test_data, koike_data, shalem_data,
+                wang_data, xiang_data, behan_data, munoz_data]
 
 sa_designs = '/Volumes/GoogleDrive/Shared drives/GPP Cloud /R&D/People/Peter/gpp-annotation-files/sgRNA_design_9606_GRCh38_SaurCas9_CRISPRko_Ensembl_20200401.parquet'
 encas12a_designs = '/Volumes/GoogleDrive/Shared drives/GPP Cloud /R&D/People/Peter/gpp-annotation-files/sgRNA_design_9606_GRCh38_enAsCas12a_CRISPRko_Ensembl_20200401.parquet'
