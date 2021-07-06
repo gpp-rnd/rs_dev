@@ -200,6 +200,8 @@ dataset_list = [aguirre_data, chari_data, doench2014_mouse_data, doench2014_huma
                 doench2016_data, kim_train_data, kim_test_data, koike_data, shalem_data,
                 wang_data, xiang_data, behan_data, munoz_data]
 
+tracr_list = ['Hsu2013', 'Chen2013']
+
 sa_designs = '/Volumes/GoogleDrive/Shared drives/GPP Cloud /R&D/People/Peter/gpp-annotation-files/sgRNA_design_9606_GRCh38_SaurCas9_CRISPRko_Ensembl_20200401.parquet'
 encas12a_designs = '/Volumes/GoogleDrive/Shared drives/GPP Cloud /R&D/People/Peter/gpp-annotation-files/sgRNA_design_9606_GRCh38_enAsCas12a_CRISPRko_Ensembl_20200401.parquet'
 

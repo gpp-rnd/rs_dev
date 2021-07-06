@@ -11,6 +11,8 @@ from sklearn.base import clone
 import gpplot
 import matplotlib.pyplot as plt
 import seaborn as sns
+import sglearn
+from datasets import tracr_list
 
 
 def setup_plots(font='Arial', font_size=7):
@@ -394,3 +396,14 @@ def no_clip(ax):
     artists.extend(ax.artists)
     for a in artists:
         a.set_clip_on(False)
+
+
+def get_feature_df(guide_df, tracrs=None):
+    if tracrs is None:
+        tracrs = tracr_list
+    X = sglearn.featurize_guides(guide_df['sgRNA Context Sequence'])
+    for tracr in tracrs:
+        X[tracr + ' tracr'] = ((guide_df['tracr'] == tracr)
+                               .astype(int)
+                               .to_list())
+    return X
