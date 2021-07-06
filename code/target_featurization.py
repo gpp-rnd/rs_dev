@@ -272,10 +272,10 @@ def get_conservation_features(sg_designs, conservation_df, conservation_column,
 # Build Target Features
 
 def build_target_feature_df(sg_designs, features=None,
-                            aa_seq_df=None, aa_width=8, aa_features=None,
+                            aa_seq_df=None, aa_width=16, aa_features=None,
                             protein_domain_df=None, protein_domain_sources=None,
                             conservation_df=None, conservation_column='ranked_conservation',
-                            cons_small_width=2, cons_large_width=32,
+                            cons_small_width=4, cons_large_width=32,
                             id_cols=None):
     """Build the feature matrix for the sgRNA target site
 
@@ -295,10 +295,10 @@ def build_target_feature_df(sg_designs, features=None,
         feature_list: list
     """
     if features is None:
-        features = ['position', 'aa', 'domain']
+        features = ['position', 'aa', 'domain', 'conservation']
     if id_cols is None:
         id_cols = ['sgRNA Context Sequence', 'Target Cut Length',
-                   'Target Transcript', 'Orientation']
+                   'Target Transcript', 'Orientation', 'dataset']
     design_df = add_target_columns(sg_designs)
     feature_df_dict = dict()
     if 'position' in features:

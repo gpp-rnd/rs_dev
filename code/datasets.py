@@ -95,6 +95,7 @@ def get_sg_groups_df(datasets):
     for ds in datasets:
         sg_df = ds.get_sg_df(include_group=True, include_activity=True)
         sg_df['dataset'] = ds.name
+        sg_df['tracr'] = ds.tracr
         design_df = ds.get_designs()
         sg_df = sg_df.merge(design_df, how='inner',
                             on=['sgRNA Sequence', 'sgRNA Context Sequence', 'PAM Sequence'])
@@ -217,4 +218,6 @@ deweirdt2020_encas12a = GuideDataset(filepath='../data/external/2019-12-12_encas
                                      sgrna_group_col='Gene Symbol', design_file=encas12a_designs,
                                      genomewide=False)
 
-expanded_dataset_list = [doench2018_sa, deweirdt2020_encas12a]
+external_dataset_list = [doench2018_sa, deweirdt2020_encas12a]
+expanded_dataset_list = external_dataset_list + dataset_list
+
