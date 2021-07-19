@@ -1,4 +1,3 @@
-from scipy import stats
 import pandas as pd
 import plotnine as gg
 from sklearn.model_selection import StratifiedGroupKFold
@@ -15,9 +14,11 @@ import sglearn
 from datasets import tracr_list
 
 
-def setup_plots(font='Arial', font_size=7):
+def setup_plots(font='Arial', font_size=7, title_size=8.2):
     gg.theme_set(gg.theme_classic() +
                  gg.theme(text=gg.element_text(family=font, size=font_size),
+                          plot_title=gg.element_text(family=font, size=title_size),
+                          axis_text=gg.element_text(color='black'),
                           strip_background=gg.element_blank()))
     mpl.rcParams.update({'font.size': font_size,
                          'font.family': font,
@@ -270,17 +271,17 @@ def get_model_rank_loss(prediction_df, nboots=1000):
 
 
 
-def lollipop_plot(data, cat, val, xlabel=None, ylabel=None):
-    if xlabel is None:
-        xlabel = val
-    if ylabel is None:
-        ylabel = cat
+def lollipop_plot(data, cat, val, val_label=None, cat_label=None):
+    if val_label is None:
+        val_label = val
+    if cat_label is None:
+        cat_label = cat
     g = (gg.ggplot(data) +
          gg.aes(y=val, ymin=0, ymax=val, x=cat, xend=cat) +
          gg.geom_point(size=4, shape='.') +
          gg.geom_linerange() +
-         gg.xlab(ylabel) +  # Flipping before coord flip
-         gg.ylab(xlabel) +
+         gg.xlab(cat_label) +  # Flipping before coord flip
+         gg.ylab(val_label) +
          gg.coord_flip())
     return g
 

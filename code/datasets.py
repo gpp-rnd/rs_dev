@@ -123,9 +123,9 @@ def get_sg_groups_df(datasets):
 mouse_designs = '/Volumes/GoogleDrive/Shared drives/GPP Cloud /R&D/People/Peter/gpp-annotation-files/sgRNA_design_10090_GRCm38_SpyoCas9_CRISPRko_Ensembl_20200406.parquet'
 human_designs = '/Volumes/GoogleDrive/Shared drives/GPP Cloud /R&D/People/Peter/gpp-annotation-files/sgRNA_design_9606_GRCh38_SpyoCas9_CRISPRko_Ensembl_20200401.parquet'
 
-aguirre_data = GuideDataset(filepath='../data/processed/Aguirre2017_activity.csv',
+aguirre_data = GuideDataset(filepath='../data/processed/Aguirre2016_activity.csv',
                             sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                            rank_col='avg_mean_centered_neg_lfc', endogenous=True, name='Aguirre2017',
+                            rank_col='avg_mean_centered_neg_lfc', endogenous=True, name='Aguirre2016',
                             sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
                             design_file=human_designs, genomewide=True)
 
