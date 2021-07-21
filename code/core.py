@@ -77,7 +77,7 @@ def plot_spearman_heatmap(predictive_performance, title='',
     g = (gg.ggplot(predictive_performance) +
          gg.aes(x='testing_set', y='model_name', fill='spearman_r') +
          gg.geom_tile(color='black') +
-         gg.scale_fill_cmap('RdBu_r', limits=(-1, 1)) +
+         gg.scale_fill_cmap('plasma', limits=(0, 1)) +
          gg.guides(fill=gg.guide_colorbar(barwidth=cbar_width, barheight=cbar_height,
                                           title=cbar_title, raster=True)) +
          gg.theme(axis_text_x=gg.element_text(angle=90, hjust=0.5, vjust=1)) +
@@ -408,3 +408,30 @@ def get_feature_df(guide_df, tracrs=None):
                                .astype(int)
                                .to_list())
     return X
+
+
+def get_performance_type_df(training_group_dict, predictive_performance_df,
+                            agg_performance_df):
+    training_group_df = pd.DataFrame(training_group_dict)
+    all_performance_type = predictive_performance_df.merge(training_group_df,
+                                                            how='inner', on='model_name')
+    all_performance_type['model_name'] = pd.Categorical(all_performance_type['model_name'],
+                                                        categories=agg_performance_df['model_name'])
+    return all_performance_type
+
+
+def plot_performance_type_df(performance_type_df, legend_title,
+                             figsize=(2.3, 2.3),
+                             ylabel='', xlabel='Spearman r',
+                             title='Model Cross-Validation Performance'):
+    plt.subplots(figsize=figsize)
+    sns.pointplot(data=performance_type_df, x='spearman_r', y='model_name',
+                  hue='model_type', join=False, palette='Set2',
+                  scale=0.5, hue_order=['all', 'single',
+                                        'leave one out'])
+    sns.despine()
+    plt.ylabel(ylabel)
+    plt.xlabel(xlabel)
+    plt.title(title)
+    plt.legend(loc="upper left", bbox_to_anchor=(0, 1),
+               title=legend_title)
