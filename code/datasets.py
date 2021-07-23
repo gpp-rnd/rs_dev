@@ -170,7 +170,7 @@ koike_data = GuideDataset(filepath='../data/processed/Koike-Yusa2014_activity.cs
 
 shalem_data = GuideDataset(filepath='../data/processed/Shalem2014_activity.csv',
                            sgrna_seq_col='sgRNA Sequence', context_seq_col='sgRNA Context Sequence',
-                           rank_col='mean_centered_neg_lfc', endogenous=True, name='Shalem_2014',
+                           rank_col='mean_centered_neg_lfc', endogenous=True, name='Shalem2014',
                            sgrna_group_col='Target Gene Symbol', cut_perc_col='Target Cut %',
                            design_file=human_designs, genomewide=True)
 

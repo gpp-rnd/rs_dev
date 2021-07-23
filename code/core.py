@@ -18,6 +18,8 @@ from shap.plots import colors
 from shap.utils._general import encode_array_if_needed
 from shap.utils import approximate_interactions, convert_name
 import warnings
+import networkx as nx
+from networkx.drawing.layout import _process_params, rescale_layout
 
 
 def setup_plots(font='Arial', font_size=7, title_size=8.2):
@@ -142,7 +144,7 @@ def get_tidy_cv_df(sg_df, random_state=7, y_col='dataset', group_col='target'):
     return tidy_cv_df
 
 
-def point_range_plot(df, x, y, ymin, ymax, wspace=0.25, xlabel=None, ylabel=None):
+def point_range_plot(df, x, y, ymin, ymax, wspace=0.25, xlabel=None, ylabel=None, facet='dataset'):
     """Create a pointrange plot
 
     :param df: DataFrame with columns x, y, ymin, ymax
@@ -160,7 +162,7 @@ def point_range_plot(df, x, y, ymin, ymax, wspace=0.25, xlabel=None, ylabel=None
          gg.aes(x=x, y=y,
                 ymin=ymin, ymax=ymax) +
          gg.geom_pointrange() +
-         gg.facet_wrap('dataset', scales='free_y') +
+         gg.facet_wrap(facet, scales='free_y') +
          gg.theme(subplots_adjust={'wspace': wspace},
                   axis_text_x=gg.element_text(angle=45, hjust=1, vjust=1)) +
          gg.xlab(xlabel) +
@@ -1213,3 +1215,127 @@ def dependence_legacy(ind, shap_values=None, features=None, feature_names=None, 
         with warnings.catch_warnings():  # ignore expected matplotlib warnings
             warnings.simplefilter("ignore", RuntimeWarning)
             plt.show()
+
+
+def cmap_map(function, cmap):
+    """ Applies function (which should operate on vectors of shape 3: [r, g, b]), on colormap cmap.
+    This routine will break any discontinuous points in a colormap.
+    """
+    cdict = cmap._segmentdata
+    step_dict = {}
+    # Firt get the list of points where the segments start or end
+    for key in ('red', 'green', 'blue'):
+        step_dict[key] = list(map(lambda x: x[0], cdict[key]))
+    step_list = sum(step_dict.values(), [])
+    step_list = np.array(list(set(step_list)))
+    # Then compute the LUT, and apply the function to the LUT
+    reduced_cmap = lambda step : np.array(cmap(step)[0:3])
+    old_LUT = np.array(list(map(reduced_cmap, step_list)))
+    new_LUT = np.array(list(map(function, old_LUT)))
+    # Now try to make a minimal segment definition of the new LUT
+    cdict = {}
+    for i, key in enumerate(['red','green','blue']):
+        this_cdict = {}
+        for j, step in enumerate(step_list):
+            if step in step_dict[key]:
+                this_cdict[step] = new_LUT[j, i]
+            elif new_LUT[j,i] != old_LUT[j, i]:
+                this_cdict[step] = new_LUT[j, i]
+        colorvector = list(map(lambda x: x + (x[1], ), this_cdict.items()))
+        colorvector.sort()
+        cdict[key] = colorvector
+
+    return mpl.colors.LinearSegmentedColormap('colormap',cdict,1024)
+
+
+def bipartite_layout(
+    G, nodes, align="vertical", scale=1, center=None, aspect_ratio=4 / 3,
+    input_nodes_order=None, other_nodes_order=None,
+):
+    """Position nodes in two straight lines.
+
+    Parameters
+    ----------
+    G : NetworkX graph or list of nodes
+        A position will be assigned to every node in G.
+
+    nodes : list or container
+        Nodes in one node set of the bipartite graph.
+        This set will be placed on left or top.
+
+    align : string (default='vertical')
+        The alignment of nodes. Vertical or horizontal.
+
+    scale : number (default: 1)
+        Scale factor for positions.
+
+    center : array-like or None
+        Coordinate pair around which to center the layout.
+
+    aspect_ratio : number (default=4/3):
+        The ratio of the width to the height of the layout.
+
+    Returns
+    -------
+    pos : dict
+        A dictionary of positions keyed by node.
+
+    Examples
+    --------
+    >>> G = nx.bipartite.gnmk_random_graph(3, 5, 10, seed=123)
+    >>> top = nx.bipartite.sets(G)[0]
+    >>> pos = nx.bipartite_layout(G, top)
+
+    Notes
+    -----
+    This algorithm currently only works in two dimensions and does not
+    try to minimize edge crossings.
+
+    """
+
+    G, center = _process_params(G, center=center, dim=2)
+    if len(G) == 0:
+        return {}
+
+    height = 1
+    width = aspect_ratio * height
+    offset = (width / 2, height / 2)
+    if input_nodes_order is None and other_nodes_order is None:
+        top = set(nodes)
+        bottom = set(G) - top
+        nodes = list(top) + list(bottom)
+    else:
+        top = [x for x in input_nodes_order if x in set(G)]
+        bottom = [x for x in other_nodes_order if x in set(G)]
+        nodes = top + bottom
+
+    if align == "vertical":
+        left_xs = np.repeat(0, len(top))
+        right_xs = np.repeat(width, len(bottom))
+        left_ys = np.linspace(0, height, len(top))
+        right_ys = np.linspace(0, height, len(bottom))
+
+        top_pos = np.column_stack([left_xs, left_ys]) - offset
+        bottom_pos = np.column_stack([right_xs, right_ys]) - offset
+
+        pos = np.concatenate([top_pos, bottom_pos])
+        pos = rescale_layout(pos, scale=scale) + center
+        pos = dict(zip(nodes, pos))
+        return pos
+
+    if align == "horizontal":
+        top_ys = np.repeat(height, len(top))
+        bottom_ys = np.repeat(0, len(bottom))
+        top_xs = np.linspace(0, width, len(top))
+        bottom_xs = np.linspace(0, width, len(bottom))
+
+        top_pos = np.column_stack([top_xs, top_ys]) - offset
+        bottom_pos = np.column_stack([bottom_xs, bottom_ys]) - offset
+
+        pos = np.concatenate([top_pos, bottom_pos])
+        pos = rescale_layout(pos, scale=scale) + center
+        pos = dict(zip(nodes, pos))
+        return pos
+
+    msg = "align must be either vertical or horizontal."
+    raise ValueError(msg)
