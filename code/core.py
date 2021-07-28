@@ -27,7 +27,8 @@ def setup_plots(font='Arial', font_size=7, title_size=8.2):
                  gg.theme(text=gg.element_text(family=font, size=font_size),
                           plot_title=gg.element_text(family=font, size=title_size),
                           axis_text=gg.element_text(color='black'),
-                          strip_background=gg.element_blank()))
+                          strip_background=gg.element_blank(),
+                          plot_background=gg.element_blank()))
     mpl.rcParams.update({'font.size': font_size,
                          'font.family': font,
                          'pdf.fonttype': 42})

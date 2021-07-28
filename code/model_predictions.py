@@ -1,7 +1,7 @@
 import pandas as pd
 
 
-class ModelPrediction():
+class ModelPrediction:
     def __init__(self, prediction_file, prediction_col, name, train_sgrna_file, train_20mer_col=None,
                  train_23mer_col=None, train_30mer_col=None, classtype='model', target_col=None,
                  merge_sgrna_file=False, model_30mer_col=None):
