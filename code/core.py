@@ -943,7 +943,7 @@ def dependence_legacy(ind, shap_values=None, features=None, feature_names=None, 
                       interaction_index="auto",
                       color="#1E88E5", axis_color="#333333", cmap=None,
                       dot_size=16, x_jitter=0, alpha=1, title=None, xmin=None, xmax=None, ax=None, show=True,
-                      text_size=None, default_fig_size=(7.5, 5), legend_aspect=20):
+                      text_size=None, default_fig_size=(7.5, 5), legend_aspect=20, nan_width=0):
     """ Create a SHAP dependence plot, colored by an interaction feature.
     Plots the value of the feature on the x-axis and the SHAP value of the same feature
     on the y-axis. This shows how the model depends on the given feature, and is like a
@@ -1186,14 +1186,14 @@ def dependence_legacy(ind, shap_values=None, features=None, feature_names=None, 
     if interaction_index is not None:
         p = ax.scatter(
             xlim[0] * np.ones(xv_nan.sum()), s[xv_nan], marker=1,
-            linewidth=2, c=cvals_imp[xv_nan], cmap=cmap, alpha=alpha,
+            linewidth=nan_width, c=cvals_imp[xv_nan], cmap=cmap, alpha=alpha,
             vmin=clow, vmax=chigh
         )
         p.set_array(cvals[xv_nan])
     else:
         ax.scatter(
             xlim[0] * np.ones(xv_nan.sum()), s[xv_nan], marker=1,
-            linewidth=2, color=color, alpha=alpha
+            linewidth=nan_width, color=color, alpha=alpha
         )
     ax.set_xlim(xlim)
 
