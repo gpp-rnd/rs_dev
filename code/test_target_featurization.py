@@ -70,18 +70,18 @@ def test_aa_seq_featurization():
            'G', 'H', 'I', 'K', 'L',
            'M', 'N', 'P', 'Q', 'R',
            'S', 'T', 'V', 'W', 'Y', '*']
-    target = 'ACDG*-'
-    sequence_order = ['-2', '-1', '0', '1', '2', '3']
+    target = 'ACDG*'
+    sequence_order = ['-2', '-1', '0', '1', '2']
     ft_dict = {}
     ft.get_one_aa_frac(ft_dict, target, aas)
-    assert ft_dict['A'] == 1/6
+    assert ft_dict['A'] == 1/5
     assert ft_dict['Q'] == 0
     ft.get_two_aa_frac(ft_dict, target, aas)
-    assert ft_dict['DG'] == 1/5
+    assert ft_dict['DG'] == 1/4
     ft.get_one_aa_pos(ft_dict, target, aas, sequence_order)
     assert ft_dict['-1C'] == 1
-    ft_dict_df = ft.featurize_aa_seqs(pd.Series([target, 'CDG*--', 'LLLLLL']))
-    assert ft_dict_df.loc['LLLLLL', 'Hydrophobicity'] == ft_dict_df['Hydrophobicity'].max()
+    ft_dict_df = ft.featurize_aa_seqs(pd.Series([target, 'CDG*-', 'LLLLL']))
+    assert ft_dict_df.loc['LLLLL', 'Hydrophobicity'] == ft_dict_df['Hydrophobicity'].max()
 
 
 def get_rev_comp(sgrna):
@@ -101,10 +101,10 @@ def test_aa_features(sg_designs_endog, aa_seq_df, codon_map):
                                                        'Isoelectric Point', 'Secondary Structure'],
                                              id_cols=['sgRNA Context Sequence', 'Target Cut Length',
                                                       'Target Transcript', 'Orientation'])
-    assert (aa_features['AA Subsequence'].str.len() == 20).all()
+    assert (aa_features['AA Subsequence'].str.len() == 21).all()
     row = aa_features.sample(1, random_state=7).iloc[0, :]
     subseq = row['AA Subsequence']
-    assert row['0' + subseq[9]] == 1
+    assert row['0' + subseq[10]] == 1
     context = row['sgRNA Context Sequence']
     rc_context = get_rev_comp(context)
     translations = dict()
@@ -116,6 +116,16 @@ def test_aa_features(sg_designs_endog, aa_seq_df, codon_map):
                                       if (j + 3) <= len(rc_context)])
     assert ((translations[0] in subseq) or (translations[1] in subseq) or (translations[2] in subseq) or
             (rc_translations[0] in subseq) or (rc_translations[1] in subseq) or (rc_translations[2] in subseq))
+
+
+def test_aa_subseq_extraction():
+    small_aa_seq_df = pd.DataFrame({'AA Index': [1, 5, 9],
+                                    'seq': ['MAVLKYSLW']*3})
+    small_aa_subseq_df = ft.extract_amino_acid_subsequence(small_aa_seq_df, 2)
+    actual_subseqs = small_aa_subseq_df['AA Subsequence']
+    expected_subseqs = ['--MAV', 'VLKYS', 'SLW*-']
+    assert len(actual_subseqs) == len(expected_subseqs)
+    assert all([a == b for a, b in zip(actual_subseqs, expected_subseqs)])
 
 
 def test_domain_conservation(sg_designs_endog, domain_data, conservation_data):

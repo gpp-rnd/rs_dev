@@ -129,7 +129,7 @@ def featurize_aa_seqs(aa_sequences, features=None):
         features = ['Pos. Ind. 1mer', 'Hydrophobicity', 'Aromaticity',
                     'Isoelectric Point', 'Secondary Structure']
     seq_len = len(aa_sequences[0])
-    sequence_order = [str(int(x - seq_len/2 + 1)) for x in range(seq_len)]
+    sequence_order = [str(int(x - seq_len//2)) for x in range(seq_len)]
     aas = ['A', 'C', 'D', 'E', 'F',
            'G', 'H', 'I', 'K', 'L',
            'M', 'N', 'P', 'Q', 'R',
@@ -159,6 +159,29 @@ def featurize_aa_seqs(aa_sequences, features=None):
     return feature_matrix
 
 
+def extract_amino_acid_subsequence(sg_aas, width):
+    """ Get the amino acid subsequence with a width of `width` on either side of the Amino Acid index
+
+    :param sg_aas: DataFrame, sgRNA designs merged with amino acid sequence
+    :param width: int
+    :return: DataFrame
+    """
+    # Pad the sequences at the beginning and end, so our index doesn't go over
+    l_padding = '-' * width
+    r_padding = '-' * (width - 1)
+    # add stop codon at the end of the sequence
+    sg_aas_subseq = sg_aas.copy()
+    sg_aas_subseq['extended_seq'] = l_padding + sg_aas_subseq['seq'] + '*' + r_padding
+    sg_aas_subseq['AA 0-Indexed'] = sg_aas_subseq['AA Index'] - 1
+    sg_aas_subseq['AA 0-Indexed padded'] = sg_aas_subseq['AA 0-Indexed'] + width
+    sg_aas_subseq['seq_start'] = sg_aas_subseq['AA 0-Indexed padded'] - width
+    sg_aas_subseq['seq_end'] = sg_aas_subseq['AA 0-Indexed padded'] + width
+    sg_aas_subseq['AA Subsequence'] = sg_aas_subseq.apply(lambda row: row['extended_seq'][row['seq_start']:(row['seq_end'] + 1)],
+                                                    axis=1)
+    return sg_aas_subseq
+
+
+
 def get_amino_acid_features(sg_designs, aa_seq_df, width, features, id_cols):
     """Featurize amino acid sequences
 
@@ -171,17 +194,9 @@ def get_amino_acid_features(sg_designs, aa_seq_df, width, features, id_cols):
     sg_aas = (aa_seq_df.merge(sg_designs[id_cols + ['Transcript Base', 'AA Index']],
                               how='inner',
                               on=['Transcript Base', 'Target Transcript']))
-    padding = '-' * (width + 1)
-    sg_aas['extended_seq'] = padding + sg_aas['seq'] + '*' + padding
-    sg_aas['AA Index pad'] = sg_aas['AA Index'] + width + 1
-    # One-indexed
-    sg_aas['seq_start'] = sg_aas['AA Index pad'] - width
-    sg_aas['seq_end'] = sg_aas['AA Index pad'] + width - 1
-    # Zero-indexed for python
-    sg_aas['AA Subsequence'] = sg_aas.apply(lambda row: row['extended_seq'][(row['seq_start'] - 1):row['seq_end']],
-                                            axis=1)
-    aa_features = featurize_aa_seqs(sg_aas['AA Subsequence'], features=features)
-    aa_features_annot = pd.concat([sg_aas[id_cols + ['AA Subsequence']]
+    sg_aas_subseq = extract_amino_acid_subsequence(sg_aas, width)
+    aa_features = featurize_aa_seqs(sg_aas_subseq['AA Subsequence'], features=features)
+    aa_features_annot = pd.concat([sg_aas_subseq[id_cols + ['AA Subsequence']]
                                    .reset_index(drop=True),
                                    aa_features.reset_index(drop=True)], axis=1)
     return aa_features_annot
