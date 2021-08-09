@@ -167,13 +167,13 @@ def extract_amino_acid_subsequence(sg_aas, width):
     :return: DataFrame
     """
     # Pad the sequences at the beginning and end, so our index doesn't go over
-    l_padding = '-' * width
-    r_padding = '-' * (width - 1)
+    l_padding = '-' * (width + 1)  # can cut just before the CDS
+    r_padding = '-' * width  # can cut the stop codon
     # add stop codon at the end of the sequence
     sg_aas_subseq = sg_aas.copy()
     sg_aas_subseq['extended_seq'] = l_padding + sg_aas_subseq['seq'] + '*' + r_padding
     sg_aas_subseq['AA 0-Indexed'] = sg_aas_subseq['AA Index'] - 1
-    sg_aas_subseq['AA 0-Indexed padded'] = sg_aas_subseq['AA 0-Indexed'] + width
+    sg_aas_subseq['AA 0-Indexed padded'] = sg_aas_subseq['AA 0-Indexed'] + len(l_padding)
     sg_aas_subseq['seq_start'] = sg_aas_subseq['AA 0-Indexed padded'] - width
     sg_aas_subseq['seq_end'] = sg_aas_subseq['AA 0-Indexed padded'] + width
     sg_aas_subseq['AA Subsequence'] = sg_aas_subseq.apply(lambda row: row['extended_seq'][row['seq_start']:(row['seq_end'] + 1)],
@@ -240,8 +240,8 @@ def get_protein_domain_features(sg_design_df, protein_domains, sources, id_cols)
 # Conservation
 
 def get_conservation_ranges(cut_pos, small_width, large_width):
-    small_range = range(cut_pos - small_width, cut_pos + small_width)
-    large_range = range(cut_pos - large_width, cut_pos + large_width)
+    small_range = range(cut_pos - small_width + 1, cut_pos + small_width + 1)
+    large_range = range(cut_pos - large_width + 1, cut_pos + large_width + 1)
     return small_range, large_range
 
 
