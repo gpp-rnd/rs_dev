@@ -290,7 +290,7 @@ def build_target_feature_df(sg_designs, features=None,
                             aa_seq_df=None, aa_width=16, aa_features=None,
                             protein_domain_df=None, protein_domain_sources=None,
                             conservation_df=None, conservation_column='ranked_conservation',
-                            cons_small_width=4, cons_large_width=32,
+                            cons_small_width=2, cons_large_width=16,
                             id_cols=None):
     """Build the feature matrix for the sgRNA target site
 
