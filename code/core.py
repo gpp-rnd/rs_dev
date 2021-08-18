@@ -145,7 +145,8 @@ def get_tidy_cv_df(sg_df, random_state=7, y_col='dataset', group_col='target'):
     return tidy_cv_df
 
 
-def point_range_plot(df, x, y, ymin, ymax, wspace=0.25, xlabel=None, ylabel=None, facet='dataset'):
+def point_range_plot(df, x, y, ymin, ymax, wspace=0.25, xlabel=None, ylabel=None, facet='dataset',
+                     color=None):
     """Create a pointrange plot
 
     :param df: DataFrame with columns x, y, ymin, ymax
@@ -161,7 +162,8 @@ def point_range_plot(df, x, y, ymin, ymax, wspace=0.25, xlabel=None, ylabel=None
         ylabel = y
     g = (gg.ggplot(data=df) +
          gg.aes(x=x, y=y,
-                ymin=ymin, ymax=ymax) +
+                ymin=ymin, ymax=ymax, color=color) +
+         gg.scale_color_brewer(type='qual', palette='Set2') +
          gg.geom_pointrange() +
          gg.facet_wrap(facet, scales='free_y') +
          gg.theme(subplots_adjust={'wspace': wspace},
