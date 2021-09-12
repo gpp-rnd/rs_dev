@@ -1,10 +1,10 @@
 import pandas as pd
 import plotnine as gg
-from sklearn.model_selection import StratifiedGroupKFold
 import numpy as np
 from tqdm import tqdm
 import matplotlib as mpl
 from sklearn import preprocessing
+from sklearn_ext import StratifiedGroupKFold
 from scipy import stats
 from sklearn.base import clone
 import gpplot
@@ -160,16 +160,27 @@ def point_range_plot(df, x, y, ymin, ymax, wspace=0.25, xlabel=None, ylabel=None
         xlabel = x
     if ylabel is None:
         ylabel = y
-    g = (gg.ggplot(data=df) +
-         gg.aes(x=x, y=y,
-                ymin=ymin, ymax=ymax, color=color) +
-         gg.scale_color_brewer(type='qual', palette='Set2') +
-         gg.geom_pointrange() +
-         gg.facet_wrap(facet, scales='free_y') +
-         gg.theme(subplots_adjust={'wspace': wspace},
-                  axis_text_x=gg.element_text(angle=45, hjust=1, vjust=1)) +
-         gg.xlab(xlabel) +
-         gg.ylab(ylabel))
+    if color is not None:
+        g = (gg.ggplot(data=df) +
+             gg.aes(x=x, y=y,
+                    ymin=ymin, ymax=ymax, color=color) +
+             gg.scale_color_brewer(type='qual', palette='Set2') +
+             gg.geom_pointrange() +
+             gg.facet_wrap(facet, scales='free_y') +
+             gg.theme(subplots_adjust={'wspace': wspace},
+                      axis_text_x=gg.element_text(angle=45, hjust=1, vjust=1)) +
+             gg.xlab(xlabel) +
+             gg.ylab(ylabel))
+    else:
+        g = (gg.ggplot(data=df) +
+             gg.aes(x=x, y=y,
+                    ymin=ymin, ymax=ymax) +
+             gg.geom_pointrange() +
+             gg.facet_wrap(facet, scales='free_y') +
+             gg.theme(subplots_adjust={'wspace': wspace},
+                      axis_text_x=gg.element_text(angle=45, hjust=1, vjust=1)) +
+             gg.xlab(xlabel) +
+             gg.ylab(ylabel))
     return g
 
 

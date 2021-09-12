@@ -2,15 +2,13 @@ joblib>=1.0.1
 pandas>=1.2.3
 numpy>=1.19.5
 scipy>=1.6.2
-#lightgbm>=3.2.0
-scikit-learn>=1.0rc1
+lightgbm>=3.2.0
 optuna>=2.7.0
 shap>=0.39
 seaborn>=0.11.1
 matplotlib>=3.4.2
 networkx>=2.5
-gpplot>=0.5.0
-poola==0.0.7
-sglearn>=1.2.3, <=1.2.5
+scikit-learn>=0.24.2
 jupyterlab
 plotnine
+pyarrow
