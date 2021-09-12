@@ -25,7 +25,7 @@ def get_position_features(sg_df, id_cols):
     :return: DataFrame
     """
     position_df = sg_df[id_cols + ['Target Cut %']].copy()
-    position_df['sense'] = sg_df['Orientation'] == 'sense'
+    position_df['sense'] = (sg_df['Orientation'] == 'sense').astype(float)
     return position_df
 
 
