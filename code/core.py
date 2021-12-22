@@ -4,7 +4,7 @@ import numpy as np
 from tqdm import tqdm
 import matplotlib as mpl
 from sklearn import preprocessing
-from sklearn_ext import StratifiedGroupKFold
+from sklearn.model_selection import StratifiedGroupKFold
 from scipy import stats
 from sklearn.base import clone
 import gpplot
